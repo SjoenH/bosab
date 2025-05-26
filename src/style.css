@@ -1,0 +1,126 @@
+/* Reset and full-screen setup */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Arial', sans-serif;
+  color: #fff;
+}
+
+/* Canvas styling for full-screen projection */
+#canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  cursor: none; /* Hide cursor during performance */
+}
+
+/* Controls overlay */
+#controls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+#controls:hover {
+  opacity: 1;
+}
+
+#playButton {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+#playButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#playButton.playing {
+  background: rgba(255, 100, 100, 0.3);
+}
+
+#actIndicator {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#instructions {
+  font-size: 12px;
+  opacity: 0.7;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Poetry overlay for Act 3 */
+#poetryOverlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 80vw;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#poetryOverlay.visible {
+  opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #controls {
+    top: 10px;
+    left: 10px;
+  }
+  
+  #poetryOverlay {
+    font-size: 1.5rem;
+    max-width: 90vw;
+  }
+}
+
+/* Hide controls in performance mode */
+.performance-mode #controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Loading indicator */
+.loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 1.5rem;
+  z-index: 200;
+}

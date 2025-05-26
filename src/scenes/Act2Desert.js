@@ -1,61 +1,61 @@
 import * as THREE from 'three'
 
 export class Act2Desert {
-  constructor(scene, camera, audioAnalyzer) {
-    this.scene = scene
-    this.camera = camera
-    this.audioAnalyzer = audioAnalyzer
-    
-    this.group = new THREE.Group()
-    this.terrain = null
-    this.particles = null
-    this.sandParticles = []
-    
-    this.isActive = false
-    this.time = 0
-    
-    // Terrain properties
-    this.terrainSize = 50
-    this.terrainResolution = 64
-    this.noiseScale = 0.1
-    
-    this.colors = {
-      sand: new THREE.Color(0xd4a574),
-      darkSand: new THREE.Color(0x8b5a2b),
-      wind: new THREE.Color(0xf5e6d3),
-      sky: new THREE.Color(0x87ceeb)
+    constructor(scene, camera, audioAnalyzer) {
+        this.scene = scene
+        this.camera = camera
+        this.audioAnalyzer = audioAnalyzer
+
+        this.group = new THREE.Group()
+        this.terrain = null
+        this.particles = null
+        this.sandParticles = []
+
+        this.isActive = false
+        this.time = 0
+
+        // Terrain properties
+        this.terrainSize = 50
+        this.terrainResolution = 64
+        this.noiseScale = 0.1
+
+        this.colors = {
+            sand: new THREE.Color(0xd4a574),
+            darkSand: new THREE.Color(0x8b5a2b),
+            wind: new THREE.Color(0xf5e6d3),
+            sky: new THREE.Color(0x87ceeb)
+        }
     }
-  }
 
-  init() {
-    this.scene.add(this.group)
-    this.createTerrain()
-    this.createSandParticles()
-    this.createWindEffects()
-    
-    console.log('🏜️ Act 2 - Desert initialized')
-  }
+    init() {
+        this.scene.add(this.group)
+        this.createTerrain()
+        this.createSandParticles()
+        this.createWindEffects()
 
-  createTerrain() {
-    // Create procedural terrain geometry
-    const geometry = new THREE.PlaneGeometry(
-      this.terrainSize, 
-      this.terrainSize, 
-      this.terrainResolution - 1, 
-      this.terrainResolution - 1
-    )
-    
-    // Create custom shader material for the sand
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        audioVolume: { value: 0 },
-        audioLow: { value: 0 },
-        heartbeat: { value: 0 },
-        sandColor: { value: this.colors.sand },
-        darkSandColor: { value: this.colors.darkSand }
-      },
-      vertexShader: `
+        console.log('🏜️ Act 2 - Desert initialized')
+    }
+
+    createTerrain() {
+        // Create procedural terrain geometry
+        const geometry = new THREE.PlaneGeometry(
+            this.terrainSize,
+            this.terrainSize,
+            this.terrainResolution - 1,
+            this.terrainResolution - 1
+        )
+
+        // Create custom shader material for the sand
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                audioVolume: { value: 0 },
+                audioLow: { value: 0 },
+                heartbeat: { value: 0 },
+                sandColor: { value: this.colors.sand },
+                darkSandColor: { value: this.colors.darkSand }
+            },
+            vertexShader: `
         uniform float time;
         uniform float audioVolume;
         uniform float audioLow;
@@ -100,7 +100,7 @@ export class Act2Desert {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
       `,
-      fragmentShader: `
+            fragmentShader: `
         uniform vec3 sandColor;
         uniform vec3 darkSandColor;
         uniform float time;
@@ -129,52 +129,52 @@ export class Act2Desert {
           gl_FragColor = vec4(color, 1.0);
         }
       `,
-      wireframe: false,
-      side: THREE.DoubleSide
-    })
-    
-    this.terrain = new THREE.Mesh(geometry, material)
-    this.terrain.rotation.x = -Math.PI / 2
-    this.terrain.position.y = -5
-    this.group.add(this.terrain)
-  }
+            wireframe: false,
+            side: THREE.DoubleSide
+        })
 
-  createSandParticles() {
-    // Create particle system for flying sand
-    const particleCount = 1000
-    const geometry = new THREE.BufferGeometry()
-    const positions = new Float32Array(particleCount * 3)
-    const velocities = new Float32Array(particleCount * 3)
-    const sizes = new Float32Array(particleCount)
-    
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3
-      
-      // Random positions
-      positions[i3] = (Math.random() - 0.5) * 100
-      positions[i3 + 1] = Math.random() * 20
-      positions[i3 + 2] = (Math.random() - 0.5) * 100
-      
-      // Random velocities
-      velocities[i3] = (Math.random() - 0.5) * 0.1
-      velocities[i3 + 1] = Math.random() * 0.05
-      velocities[i3 + 2] = (Math.random() - 0.5) * 0.1
-      
-      sizes[i] = Math.random() * 0.1 + 0.05
+        this.terrain = new THREE.Mesh(geometry, material)
+        this.terrain.rotation.x = -Math.PI / 2
+        this.terrain.position.y = -5
+        this.group.add(this.terrain)
     }
-    
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3))
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
-    
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        audioVolume: { value: 0 },
-        windForce: { value: 0 },
-        color: { value: this.colors.wind }
-      },
-      vertexShader: `
+
+    createSandParticles() {
+        // Create particle system for flying sand
+        const particleCount = 1000
+        const geometry = new THREE.BufferGeometry()
+        const positions = new Float32Array(particleCount * 3)
+        const velocities = new Float32Array(particleCount * 3)
+        const sizes = new Float32Array(particleCount)
+
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3
+
+            // Random positions
+            positions[i3] = (Math.random() - 0.5) * 100
+            positions[i3 + 1] = Math.random() * 20
+            positions[i3 + 2] = (Math.random() - 0.5) * 100
+
+            // Random velocities
+            velocities[i3] = (Math.random() - 0.5) * 0.1
+            velocities[i3 + 1] = Math.random() * 0.05
+            velocities[i3 + 2] = (Math.random() - 0.5) * 0.1
+
+            sizes[i] = Math.random() * 0.1 + 0.05
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+        geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3))
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                audioVolume: { value: 0 },
+                windForce: { value: 0 },
+                color: { value: this.colors.wind }
+            },
+            vertexShader: `
         attribute vec3 velocity;
         attribute float size;
         uniform float time;
@@ -199,7 +199,7 @@ export class Act2Desert {
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
-      fragmentShader: `
+            fragmentShader: `
         uniform vec3 color;
         varying float vOpacity;
         
@@ -211,187 +211,187 @@ export class Act2Desert {
           gl_FragColor = vec4(color, alpha);
         }
       `,
-      transparent: true,
-      blending: THREE.AdditiveBlending
-    })
-    
-    this.particles = new THREE.Points(geometry, material)
-    this.group.add(this.particles)
-  }
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        })
 
-  createWindEffects() {
-    // Create subtle wind lines
-    const lineCount = 20
-    
-    for (let i = 0; i < lineCount; i++) {
-      const points = []
-      const segmentCount = 50
-      
-      for (let j = 0; j < segmentCount; j++) {
-        const x = (j / segmentCount) * 100 - 50
-        const y = Math.random() * 10 + 5
-        const z = (Math.random() - 0.5) * 100
-        points.push(new THREE.Vector3(x, y, z))
-      }
-      
-      const geometry = new THREE.BufferGeometry().setFromPoints(points)
-      const material = new THREE.LineBasicMaterial({
-        color: this.colors.wind,
-        transparent: true,
-        opacity: 0.1
-      })
-      
-      const line = new THREE.Line(geometry, material)
-      line.userData = {
-        originalPoints: points,
-        speed: Math.random() * 0.02 + 0.01,
-        amplitude: Math.random() * 0.5 + 0.2
-      }
-      
-      this.group.add(line)
+        this.particles = new THREE.Points(geometry, material)
+        this.group.add(this.particles)
     }
-  }
 
-  enter() {
-    this.isActive = true
-    this.group.visible = true
-    
-    // Smooth camera transition
-    this.animateCameraToDesert()
-  }
+    createWindEffects() {
+        // Create subtle wind lines
+        const lineCount = 20
 
-  exit() {
-    this.isActive = false
-    
-    setTimeout(() => {
-      this.group.visible = false
-    }, 2000)
-  }
+        for (let i = 0; i < lineCount; i++) {
+            const points = []
+            const segmentCount = 50
 
-  animateCameraToDesert() {
-    const startPosition = this.camera.position.clone()
-    const targetPosition = new THREE.Vector3(0, 8, 15)
-    const startTime = performance.now()
-    const duration = 3000
-    
-    const animate = () => {
-      const elapsed = performance.now() - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      
-      // Ease in-out
-      const easeProgress = 0.5 - 0.5 * Math.cos(progress * Math.PI)
-      
-      this.camera.position.lerpVectors(startPosition, targetPosition, easeProgress)
-      this.camera.lookAt(0, 0, 0)
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
+            for (let j = 0; j < segmentCount; j++) {
+                const x = (j / segmentCount) * 100 - 50
+                const y = Math.random() * 10 + 5
+                const z = (Math.random() - 0.5) * 100
+                points.push(new THREE.Vector3(x, y, z))
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points)
+            const material = new THREE.LineBasicMaterial({
+                color: this.colors.wind,
+                transparent: true,
+                opacity: 0.1
+            })
+
+            const line = new THREE.Line(geometry, material)
+            line.userData = {
+                originalPoints: points,
+                speed: Math.random() * 0.02 + 0.01,
+                amplitude: Math.random() * 0.5 + 0.2
+            }
+
+            this.group.add(line)
+        }
     }
-    
-    animate()
-  }
 
-  update(time) {
-    if (!this.isActive) return
-    
-    this.time = time * 0.001
-    
-    // Update terrain with heartbeat
-    this.updateTerrain()
-    
-    // Update sand particles
-    this.updateParticles()
-    
-    // Update camera movement
-    this.updateCamera()
-  }
+    enter() {
+        this.isActive = true
+        this.group.visible = true
 
-  updateTerrain() {
-    if (!this.terrain) return
-    
-    const audioVolume = this.audioAnalyzer.getVolume()
-    const audioLow = this.audioAnalyzer.getLowFreq()
-    const beat = this.audioAnalyzer.getBeat()
-    
-    // Simulate heartbeat pattern
-    const heartbeatPattern = Math.sin(this.time * 1.2) * 0.5 + 0.5
-    const heartbeat = beat ? 1.0 : heartbeatPattern * 0.3
-    
-    // Update shader uniforms
-    this.terrain.material.uniforms.time.value = this.time
-    this.terrain.material.uniforms.audioVolume.value = audioVolume
-    this.terrain.material.uniforms.audioLow.value = audioLow
-    this.terrain.material.uniforms.heartbeat.value = heartbeat
-  }
-
-  updateParticles() {
-    if (!this.particles) return
-    
-    const audioVolume = this.audioAnalyzer.getVolume()
-    const audioMid = this.audioAnalyzer.getMidFreq()
-    
-    // Wind effect based on audio
-    const windForce = audioMid * 2.0
-    
-    this.particles.material.uniforms.time.value = this.time
-    this.particles.material.uniforms.audioVolume.value = audioVolume
-    this.particles.material.uniforms.windForce.value = windForce
-    
-    // Update particle positions
-    const positions = this.particles.geometry.attributes.position.array
-    const velocities = this.particles.geometry.attributes.velocity.array
-    
-    for (let i = 0; i < positions.length; i += 3) {
-      // Apply wind movement
-      positions[i] += velocities[i] * (1 + windForce)
-      positions[i + 1] += velocities[i + 1] * (1 + audioVolume)
-      positions[i + 2] += velocities[i + 2] * (1 + windForce)
-      
-      // Reset particles that go too far
-      if (positions[i] > 50) positions[i] = -50
-      if (positions[i] < -50) positions[i] = 50
-      if (positions[i + 2] > 50) positions[i + 2] = -50
-      if (positions[i + 2] < -50) positions[i + 2] = 50
-      if (positions[i + 1] > 30) positions[i + 1] = 0
+        // Smooth camera transition
+        this.animateCameraToDesert()
     }
-    
-    this.particles.geometry.attributes.position.needsUpdate = true
-  }
 
-  updateCamera() {
-    // Gentle breathing-like camera movement
-    const audioVolume = this.audioAnalyzer.getVolume()
-    const breathingPattern = Math.sin(this.time * 0.5) * 0.3
-    
-    this.camera.position.y = 8 + breathingPattern + audioVolume * 2
-    this.camera.position.z = 15 + Math.sin(this.time * 0.3) * 1
-    
-    // Look slightly into the distance
-    const lookTarget = new THREE.Vector3(
-      Math.sin(this.time * 0.2) * 2,
-      -2 + audioVolume * 1,
-      -5
-    )
-    this.camera.lookAt(lookTarget)
-  }
+    exit() {
+        this.isActive = false
 
-  updateBackground(time) {
-    if (this.isActive) return
-    this.time = time * 0.001
-  }
-
-  dispose() {
-    if (this.terrain) {
-      this.terrain.geometry.dispose()
-      this.terrain.material.dispose()
+        setTimeout(() => {
+            this.group.visible = false
+        }, 2000)
     }
-    
-    if (this.particles) {
-      this.particles.geometry.dispose()
-      this.particles.material.dispose()
+
+    animateCameraToDesert() {
+        const startPosition = this.camera.position.clone()
+        const targetPosition = new THREE.Vector3(0, 8, 15)
+        const startTime = performance.now()
+        const duration = 3000
+
+        const animate = () => {
+            const elapsed = performance.now() - startTime
+            const progress = Math.min(elapsed / duration, 1)
+
+            // Ease in-out
+            const easeProgress = 0.5 - 0.5 * Math.cos(progress * Math.PI)
+
+            this.camera.position.lerpVectors(startPosition, targetPosition, easeProgress)
+            this.camera.lookAt(0, 0, 0)
+
+            if (progress < 1) {
+                requestAnimationFrame(animate)
+            }
+        }
+
+        animate()
     }
-    
-    this.scene.remove(this.group)
-  }
+
+    update(time) {
+        if (!this.isActive) return
+
+        this.time = time * 0.001
+
+        // Update terrain with heartbeat
+        this.updateTerrain()
+
+        // Update sand particles
+        this.updateParticles()
+
+        // Update camera movement
+        this.updateCamera()
+    }
+
+    updateTerrain() {
+        if (!this.terrain) return
+
+        const audioVolume = this.audioAnalyzer.getVolume()
+        const audioLow = this.audioAnalyzer.getLowFreq()
+        const beat = this.audioAnalyzer.getBeat()
+
+        // Simulate heartbeat pattern
+        const heartbeatPattern = Math.sin(this.time * 1.2) * 0.5 + 0.5
+        const heartbeat = beat ? 1.0 : heartbeatPattern * 0.3
+
+        // Update shader uniforms
+        this.terrain.material.uniforms.time.value = this.time
+        this.terrain.material.uniforms.audioVolume.value = audioVolume
+        this.terrain.material.uniforms.audioLow.value = audioLow
+        this.terrain.material.uniforms.heartbeat.value = heartbeat
+    }
+
+    updateParticles() {
+        if (!this.particles) return
+
+        const audioVolume = this.audioAnalyzer.getVolume()
+        const audioMid = this.audioAnalyzer.getMidFreq()
+
+        // Wind effect based on audio
+        const windForce = audioMid * 2.0
+
+        this.particles.material.uniforms.time.value = this.time
+        this.particles.material.uniforms.audioVolume.value = audioVolume
+        this.particles.material.uniforms.windForce.value = windForce
+
+        // Update particle positions
+        const positions = this.particles.geometry.attributes.position.array
+        const velocities = this.particles.geometry.attributes.velocity.array
+
+        for (let i = 0; i < positions.length; i += 3) {
+            // Apply wind movement
+            positions[i] += velocities[i] * (1 + windForce)
+            positions[i + 1] += velocities[i + 1] * (1 + audioVolume)
+            positions[i + 2] += velocities[i + 2] * (1 + windForce)
+
+            // Reset particles that go too far
+            if (positions[i] > 50) positions[i] = -50
+            if (positions[i] < -50) positions[i] = 50
+            if (positions[i + 2] > 50) positions[i + 2] = -50
+            if (positions[i + 2] < -50) positions[i + 2] = 50
+            if (positions[i + 1] > 30) positions[i + 1] = 0
+        }
+
+        this.particles.geometry.attributes.position.needsUpdate = true
+    }
+
+    updateCamera() {
+        // Gentle breathing-like camera movement
+        const audioVolume = this.audioAnalyzer.getVolume()
+        const breathingPattern = Math.sin(this.time * 0.5) * 0.3
+
+        this.camera.position.y = 8 + breathingPattern + audioVolume * 2
+        this.camera.position.z = 15 + Math.sin(this.time * 0.3) * 1
+
+        // Look slightly into the distance
+        const lookTarget = new THREE.Vector3(
+            Math.sin(this.time * 0.2) * 2,
+            -2 + audioVolume * 1,
+            -5
+        )
+        this.camera.lookAt(lookTarget)
+    }
+
+    updateBackground(time) {
+        if (this.isActive) return
+        this.time = time * 0.001
+    }
+
+    dispose() {
+        if (this.terrain) {
+            this.terrain.geometry.dispose()
+            this.terrain.material.dispose()
+        }
+
+        if (this.particles) {
+            this.particles.geometry.dispose()
+            this.particles.material.dispose()
+        }
+
+        this.scene.remove(this.group)
+    }
 }
