@@ -121,7 +121,7 @@ export class PerformanceApp {
                     break
                 case 'KeyM':
                     event.preventDefault()
-                    this.audioAnalyzer.toggleMicrophone()
+                    this.toggleMicrophone()
                     break
                 case 'KeyF':
                     event.preventDefault()
@@ -130,6 +130,34 @@ export class PerformanceApp {
                 case 'KeyP':
                     event.preventDefault()
                     this.togglePerformanceMode()
+                    break
+                case 'KeyD':
+                    event.preventDefault()
+                    this.toggleDemoMode()
+                    break
+                case 'KeyQ':
+                    event.preventDefault()
+                    this.startQuickDemo()
+                    break
+                case 'KeyS':
+                    event.preventDefault()
+                    this.stopDemo()
+                    break
+                case 'Digit1':
+                    event.preventDefault()
+                    this.transitionToAct(1)
+                    break
+                case 'Digit2':
+                    event.preventDefault()
+                    this.transitionToAct(2)
+                    break
+                case 'Digit3':
+                    event.preventDefault()
+                    this.transitionToAct(3)
+                    break
+                case 'Digit4':
+                    event.preventDefault()
+                    this.transitionToAct(4)
                     break
             }
         })
@@ -149,6 +177,9 @@ export class PerformanceApp {
 
         // Update audio analysis
         this.audioAnalyzer.update()
+
+        // Update controls with microphone status and audio levels
+        this.controls.update(this.audioAnalyzer)
 
         // Handle auto-play progression
         if (this.isPlaying) {
@@ -247,5 +278,36 @@ export class PerformanceApp {
         errorDiv.style.color = '#ff6b6b'
         errorDiv.textContent = message
         document.body.appendChild(errorDiv)
+    }
+
+    // Demo mode methods
+    toggleDemoMode() {
+        const isDemo = !this.sceneManager.demoMode
+        this.sceneManager.enableDemoMode(isDemo)
+        this.controls.showDemoMessage(isDemo ? 'Demo mode enabled - faster transitions' : 'Demo mode disabled')
+    }
+
+    startQuickDemo() {
+        this.sceneManager.startQuickDemo()
+        this.controls.showDemoMessage('Quick demo started - cycling through all acts')
+    }
+
+    stopDemo() {
+        this.sceneManager.stopDemo()
+        this.controls.showDemoMessage('Demo stopped')
+    }
+
+    async toggleMicrophone() {
+        const wasConnected = this.audioAnalyzer.isMicrophoneConnected
+        await this.audioAnalyzer.toggleMicrophone()
+        
+        // Show status after toggle
+        if (!wasConnected && this.audioAnalyzer.isMicrophoneConnected) {
+            this.controls.showMicrophoneStatus(true)
+        } else if (!this.audioAnalyzer.isEnabled) {
+            this.controls.showMessage('Microphone disabled 🔇', 2000)
+        } else if (this.audioAnalyzer.isEnabled && !wasConnected) {
+            this.controls.showMessage('Microphone enabled 🎤', 2000)
+        }
     }
 }

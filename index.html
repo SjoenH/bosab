@@ -16,7 +16,30 @@
   <div id="controls">
     <button id="playButton">▶ Play Auto Mode</button>
     <div id="actIndicator">Act 1</div>
-    <div id="instructions">← → Navigate Acts | Space: Play/Pause | M: Toggle Mic</div>
+    <div id="micStatus">🔇 No Mic</div>
+    <div id="audioLevels">
+      <div class="level-bar">
+        <div class="level-label">Vol:</div>
+        <div class="level-fill" id="volumeLevel"></div>
+      </div>
+      <div class="level-bar">
+        <div class="level-label">Low:</div>
+        <div class="level-fill level-fill-low" id="lowLevel"></div>
+      </div>
+      <div class="level-bar">
+        <div class="level-label">Mid:</div>
+        <div class="level-fill level-fill-mid" id="midLevel"></div>
+      </div>
+      <div class="level-bar">
+        <div class="level-label">High:</div>
+        <div class="level-fill level-fill-high" id="highLevel"></div>
+      </div>
+      <div class="level-bar">
+        <div class="level-label">Beat:</div>
+        <div class="level-indicator" id="beatIndicator"></div>
+      </div>
+    </div>
+    <div id="instructions">← → Navigate | Space: Play/Pause | M: Mic | D: Demo | Q: Quick Demo | 1-4: Acts</div>
   </div>
 
   <!-- Poetry overlay for Act 3 -->

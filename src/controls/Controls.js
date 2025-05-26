@@ -3,12 +3,24 @@ export class Controls {
         this.app = app
         this.playButton = null
         this.actIndicator = null
+        this.micStatus = null
+        this.volumeLevel = null
+        this.lowLevel = null
+        this.midLevel = null
+        this.highLevel = null
+        this.beatIndicator = null
         this.isInitialized = false
     }
 
     init() {
         this.playButton = document.getElementById('playButton')
         this.actIndicator = document.getElementById('actIndicator')
+        this.micStatus = document.getElementById('micStatus')
+        this.volumeLevel = document.getElementById('volumeLevel')
+        this.lowLevel = document.getElementById('lowLevel')
+        this.midLevel = document.getElementById('midLevel')
+        this.highLevel = document.getElementById('highLevel')
+        this.beatIndicator = document.getElementById('beatIndicator')
 
         if (!this.playButton || !this.actIndicator) {
             console.warn('Control elements not found')
@@ -17,6 +29,7 @@ export class Controls {
 
         this.setupPlayButton()
         this.updateActIndicator(1)
+        this.updateMicrophoneStatus('disconnected')
         this.isInitialized = true
 
         console.log('🎮 Controls initialized')
@@ -30,7 +43,8 @@ export class Controls {
         // Request microphone access when play is first clicked
         this.playButton.addEventListener('click', async () => {
             if (!this.app.audioAnalyzer.isMicrophoneConnected) {
-                await this.app.audioAnalyzer.requestMicrophone()
+                const connected = await this.app.audioAnalyzer.requestMicrophone()
+                this.showMicrophoneStatus(connected)
             }
         }, { once: true })
     }
@@ -129,5 +143,82 @@ export class Controls {
             controls.style.opacity = '0.8'
             controls.style.pointerEvents = 'auto'
         }
+    }
+
+    showDemoMessage(message) {
+        this.showMessage(`🎬 DEMO: ${message}`, 2000)
+    }
+
+    updateMicrophoneStatus(status) {
+        if (!this.micStatus) return
+
+        switch (status) {
+            case 'connected':
+                this.micStatus.textContent = '🎤 Live Mic'
+                this.micStatus.className = 'connected'
+                break
+            case 'silent':
+                this.micStatus.textContent = '🔇 Silent Mode'
+                this.micStatus.className = 'silent'
+                break
+            default:
+                this.micStatus.textContent = '🔇 No Mic'
+                this.micStatus.className = ''
+        }
+    }
+
+    updateAudioLevels(audioData) {
+        // Update volume level bar
+        if (this.volumeLevel) {
+            const volumePercent = Math.min(audioData.volume * 100, 100)
+            this.volumeLevel.style.setProperty('--level', `${volumePercent}%`)
+        }
+
+        // Update frequency level bars
+        if (this.lowLevel) {
+            const lowPercent = Math.min(audioData.lowFreq * 100, 100)
+            this.lowLevel.style.setProperty('--level', `${lowPercent}%`)
+        }
+
+        if (this.midLevel) {
+            const midPercent = Math.min(audioData.midFreq * 100, 100)
+            this.midLevel.style.setProperty('--level', `${midPercent}%`)
+        }
+
+        if (this.highLevel) {
+            const highPercent = Math.min(audioData.highFreq * 100, 100)
+            this.highLevel.style.setProperty('--level', `${highPercent}%`)
+        }
+
+        // Update beat indicator
+        if (this.beatIndicator) {
+            if (audioData.beat) {
+                this.beatIndicator.classList.add('beat')
+            } else {
+                this.beatIndicator.classList.remove('beat')
+            }
+        }
+    }
+
+    update(audioAnalyzer) {
+        if (!this.isInitialized) return
+
+        // Update microphone status
+        if (audioAnalyzer.isMicrophoneConnected) {
+            this.updateMicrophoneStatus('connected')
+        } else if (audioAnalyzer.isEnabled) {
+            this.updateMicrophoneStatus('silent')
+        } else {
+            this.updateMicrophoneStatus('disconnected')
+        }
+
+        // Update audio levels
+        this.updateAudioLevels({
+            volume: audioAnalyzer.getVolume(),
+            lowFreq: audioAnalyzer.getLowFreq(),
+            midFreq: audioAnalyzer.getMidFreq(),
+            highFreq: audioAnalyzer.getHighFreq(),
+            beat: audioAnalyzer.getBeat()
+        })
     }
 }

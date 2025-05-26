@@ -16,6 +16,18 @@ export class SceneManager {
         this.isTransitioning = false
         this.transitionDuration = 3000 // 3 seconds
         this.transitionStartTime = 0
+
+        // Transition state management
+        this.previousAct = null
+        this.nextAct = null
+        this.transitionPhase = 'idle' // 'fade-out', 'fade-in', 'idle'
+
+        // Demo mode configuration
+        this.demoMode = false
+        this.autoProgress = false
+        this.actProgressTimer = 0
+        this.demoActDuration = 5000 // 5 seconds per act in demo
+        this.demoTransitionDuration = 500 // 0.5 seconds transitions in demo
     }
 
     init() {
@@ -31,6 +43,7 @@ export class SceneManager {
         // Start with Act 1
         this.currentAct = this.acts[1]
         this.currentAct.enter()
+        this.actProgressTimer = performance.now()
 
         console.log('🎭 Scene manager initialized with 4 acts')
     }
@@ -46,30 +59,36 @@ export class SceneManager {
             return
         }
 
-        // Start transition
+        // Use demo transition duration if in demo mode
+        const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
+
+        // Start transition - fade out current act first
         this.isTransitioning = true
         this.transitionStartTime = performance.now()
         this.transitionProgress = 0
+        this.transitionPhase = 'fade-out'
 
-        // Fade out current act
-        if (this.currentAct) {
-            this.currentAct.exit()
+        // Store transition state
+        this.previousAct = this.currentAct
+        this.nextAct = newAct
+
+        // Hide new act initially
+        if (this.nextAct) {
+            this.nextAct.group.visible = false
         }
 
-        // Prepare new act
-        newAct.enter()
-
-        // Update references
-        this.currentAct = newAct
-        this.currentActNumber = actNumber
-
-        console.log(`🔄 Transitioning to Act ${actNumber}`)
+        console.log(`🔄 Transitioning from Act ${this.currentActNumber} to Act ${actNumber}${this.demoMode ? ' (DEMO)' : ''}`)
     }
 
     update(time) {
         // Handle transition
         if (this.isTransitioning) {
             this.updateTransition(time)
+        }
+
+        // Handle auto-progression in demo mode
+        if (this.autoProgress && !this.isTransitioning) {
+            this.updateAutoProgress(time)
         }
 
         // Update current act
@@ -86,8 +105,31 @@ export class SceneManager {
     }
 
     updateTransition(time) {
+        const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
         const elapsed = time - this.transitionStartTime
-        this.transitionProgress = Math.min(elapsed / this.transitionDuration, 1)
+        this.transitionProgress = Math.min(elapsed / duration, 1)
+
+        if (this.transitionPhase === 'fade-out') {
+            // First half: fade out current act
+            if (this.transitionProgress >= 0.5) {
+                // Switch to fade-in phase
+                this.transitionPhase = 'fade-in'
+                
+                // Exit current act and enter new act at midpoint
+                if (this.previousAct) {
+                    this.previousAct.exit()
+                }
+                
+                if (this.nextAct) {
+                    this.nextAct.enter()
+                    this.currentAct = this.nextAct
+                    this.currentActNumber = this.getActNumber(this.nextAct)
+                }
+                
+                // Reset auto-progress timer
+                this.actProgressTimer = time
+            }
+        }
 
         // Apply transition effects
         this.applyTransitionEffects()
@@ -96,41 +138,69 @@ export class SceneManager {
         if (this.transitionProgress >= 1) {
             this.isTransitioning = false
             this.transitionProgress = 0
+            this.transitionPhase = 'idle'
+            this.previousAct = null
+            this.nextAct = null
         }
     }
 
     applyTransitionEffects() {
-        // Apply fade effect based on act type
-        const fadeValue = this.getTransitionFade()
+        let fadeValue = 1.0
 
-        // Apply to all objects in scene
-        this.scene.traverse((child) => {
+        if (this.transitionPhase === 'fade-out') {
+            // Fade out: 1.0 -> 0.0 during first half
+            const fadeOutProgress = Math.min(this.transitionProgress * 2, 1)
+            fadeValue = 1.0 - fadeOutProgress
+        } else if (this.transitionPhase === 'fade-in') {
+            // Fade in: 0.0 -> 1.0 during second half
+            const fadeInProgress = Math.max((this.transitionProgress - 0.5) * 2, 0)
+            fadeValue = fadeInProgress
+        }
+
+        // Apply fade only to the current active act
+        const actToFade = this.transitionPhase === 'fade-out' ? this.previousAct : this.currentAct
+        if (actToFade && actToFade.group) {
+            this.applyFadeToGroup(actToFade.group, fadeValue)
+        }
+    }
+
+    applyFadeToGroup(group, fadeValue) {
+        group.traverse((child) => {
             if (child.material) {
                 if (Array.isArray(child.material)) {
                     child.material.forEach(material => {
-                        if (material.uniforms && material.uniforms.opacity) {
-                            material.uniforms.opacity.value = fadeValue
-                        } else if (material.opacity !== undefined) {
-                            material.opacity = fadeValue
-                            material.transparent = fadeValue < 1
-                        }
+                        this.applyFadeToMaterial(material, fadeValue)
                     })
                 } else {
-                    if (child.material.uniforms && child.material.uniforms.opacity) {
-                        child.material.uniforms.opacity.value = fadeValue
-                    } else if (child.material.opacity !== undefined) {
-                        child.material.opacity = fadeValue
-                        child.material.transparent = fadeValue < 1
-                    }
+                    this.applyFadeToMaterial(child.material, fadeValue)
                 }
             }
         })
+    }
+
+    applyFadeToMaterial(material, fadeValue) {
+        if (material.uniforms && material.uniforms.opacity) {
+            material.uniforms.opacity.value = fadeValue
+        } else if (material.opacity !== undefined) {
+            material.opacity = fadeValue
+            material.transparent = fadeValue < 1
+        }
     }
 
     getTransitionFade() {
         // Smooth fade curve
         const t = this.transitionProgress
         return 0.5 + 0.5 * Math.cos(Math.PI * t)
+    }
+
+    getActNumber(act) {
+        // Helper method to get act number from act instance
+        for (const [number, actInstance] of Object.entries(this.acts)) {
+            if (actInstance === act) {
+                return parseInt(number)
+            }
+        }
+        return 1 // fallback
     }
 
     getCurrentAct() {
@@ -147,6 +217,52 @@ export class SceneManager {
 
     isInTransition() {
         return this.isTransitioning
+    }
+
+    updateAutoProgress(time) {
+        const duration = this.demoMode ? this.demoActDuration : 6.25 * 60 * 1000 // 6.25 minutes for performance
+        const elapsed = time - this.actProgressTimer
+
+        if (elapsed >= duration) {
+            // Auto-advance to next act
+            let nextAct = this.currentActNumber + 1
+            if (nextAct > 4) {
+                nextAct = 1 // Loop back to Act 1
+            }
+            this.transitionToAct(nextAct)
+        }
+    }
+
+    // Demo mode controls
+    enableDemoMode(enabled = true) {
+        this.demoMode = enabled
+        console.log(`🎬 Demo mode ${enabled ? 'enabled' : 'disabled'}`)
+    }
+
+    setAutoProgress(enabled = true) {
+        this.autoProgress = enabled
+        this.actProgressTimer = performance.now() // Reset timer
+        console.log(`⏩ Auto-progress ${enabled ? 'enabled' : 'disabled'}`)
+    }
+
+    setDemoTiming(actDuration = 5000, transitionDuration = 500) {
+        this.demoActDuration = actDuration
+        this.demoTransitionDuration = transitionDuration
+        console.log(`⏱️ Demo timing: ${actDuration}ms acts, ${transitionDuration}ms transitions`)
+    }
+
+    // Quick cycle through all acts for testing
+    startQuickDemo() {
+        this.enableDemoMode(true)
+        this.setDemoTiming(3000, 300) // 3 seconds per act, 0.3 second transitions
+        this.setAutoProgress(true)
+        console.log('🚀 Quick demo started - cycling through all acts')
+    }
+
+    stopDemo() {
+        this.enableDemoMode(false)
+        this.setAutoProgress(false)
+        console.log('⏹️ Demo stopped')
     }
 
     // Cleanup method
