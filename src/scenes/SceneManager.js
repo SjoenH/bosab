@@ -20,7 +20,11 @@ export class SceneManager {
         // Transition state management
         this.previousAct = null
         this.nextAct = null
-        this.transitionPhase = 'idle' // 'fade-out', 'fade-in', 'idle'
+        this.transitionPhase = 'idle' // 'fade-out', 'transition', 'fade-in', 'idle'
+
+        // Enhanced transition system
+        this.transitionType = 'smooth' // 'fade', 'smooth'
+        this.allowOverlap = true // Allow both acts to be visible during transition
 
         // Demo mode configuration
         this.demoMode = false
@@ -62,7 +66,7 @@ export class SceneManager {
         // Use demo transition duration if in demo mode
         const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
 
-        // Start transition - fade out current act first
+        // Start enhanced transition
         this.isTransitioning = true
         this.transitionStartTime = performance.now()
         this.transitionProgress = 0
@@ -72,9 +76,18 @@ export class SceneManager {
         this.previousAct = this.currentAct
         this.nextAct = newAct
 
-        // Hide new act initially
+        // Prepare both acts for transition
+        if (this.previousAct) {
+            this.previousAct.startExit()
+        }
+
         if (this.nextAct) {
-            this.nextAct.group.visible = false
+            this.nextAct.prepareEntry()
+            if (this.allowOverlap) {
+                this.nextAct.group.visible = true
+            } else {
+                this.nextAct.group.visible = false
+            }
         }
 
         console.log(`🔄 Transitioning from Act ${this.currentActNumber} to Act ${actNumber}${this.demoMode ? ' (DEMO)' : ''}`)
@@ -109,59 +122,94 @@ export class SceneManager {
         const elapsed = time - this.transitionStartTime
         this.transitionProgress = Math.min(elapsed / duration, 1)
 
-        if (this.transitionPhase === 'fade-out') {
-            // First half: fade out current act
-            if (this.transitionProgress >= 0.5) {
-                // Switch to fade-in phase
-                this.transitionPhase = 'fade-in'
-                
-                // Exit current act and enter new act at midpoint
-                if (this.previousAct) {
-                    this.previousAct.exit()
-                }
-                
-                if (this.nextAct) {
-                    this.nextAct.enter()
-                    this.currentAct = this.nextAct
-                    this.currentActNumber = this.getActNumber(this.nextAct)
-                }
-                
-                // Reset auto-progress timer
-                this.actProgressTimer = time
+        // Enhanced transition with three phases
+        if (this.transitionPhase === 'fade-out' && this.transitionProgress >= 0.25) {
+            // Switch to main transition phase
+            this.transitionPhase = 'transition'
+
+            if (this.nextAct) {
+                this.nextAct.startEntry()
+                this.currentAct = this.nextAct
+                this.currentActNumber = this.getActNumber(this.nextAct)
+            }
+        } else if (this.transitionPhase === 'transition' && this.transitionProgress >= 0.75) {
+            // Switch to fade-in phase
+            this.transitionPhase = 'fade-in'
+
+            if (this.previousAct) {
+                this.previousAct.finishExit()
             }
         }
 
-        // Apply transition effects
-        this.applyTransitionEffects()
+        // Update both acts during transition
+        if (this.previousAct && this.transitionProgress < 0.8) {
+            this.previousAct.updateTransition(this.transitionProgress, 'exit')
+        }
+
+        if (this.nextAct && this.transitionProgress > 0.2) {
+            const entryProgress = Math.max(0, (this.transitionProgress - 0.2) / 0.8)
+            this.nextAct.updateTransition(entryProgress, 'enter')
+        }
+
+        // Apply smooth transition effects
+        this.applySmoothTransitionEffects()
 
         // End transition
         if (this.transitionProgress >= 1) {
             this.isTransitioning = false
             this.transitionProgress = 0
             this.transitionPhase = 'idle'
+
+            if (this.previousAct) {
+                this.previousAct.exit()
+            }
+            if (this.nextAct) {
+                this.nextAct.enter()
+            }
+
             this.previousAct = null
             this.nextAct = null
+
+            // Reset auto-progress timer
+            this.actProgressTimer = time
+        }
+    }
+
+    applySmoothTransitionEffects() {
+        // Smooth easing function
+        const easeInOutCubic = (t) => {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+        }
+
+        const easedProgress = easeInOutCubic(this.transitionProgress)
+
+        // Apply smooth transitions based on phase
+        if (this.transitionPhase === 'fade-out') {
+            const fadeOutValue = 1.0 - (easedProgress * 4) // Fade out over first 25%
+            if (this.previousAct && this.previousAct.group) {
+                this.applyFadeToGroup(this.previousAct.group, Math.max(0, fadeOutValue))
+            }
+        } else if (this.transitionPhase === 'transition') {
+            // Both acts visible, transitioning
+            if (this.previousAct && this.previousAct.group) {
+                const exitFade = 1.0 - ((easedProgress - 0.25) * 2) // Continue fading previous
+                this.applyFadeToGroup(this.previousAct.group, Math.max(0, exitFade))
+            }
+            if (this.nextAct && this.nextAct.group) {
+                const entryFade = (easedProgress - 0.25) * 2 // Fade in new
+                this.applyFadeToGroup(this.nextAct.group, Math.min(1, Math.max(0, entryFade)))
+            }
+        } else if (this.transitionPhase === 'fade-in') {
+            const fadeInValue = (easedProgress - 0.75) * 4 // Fade in over last 25%
+            if (this.nextAct && this.nextAct.group) {
+                this.applyFadeToGroup(this.nextAct.group, Math.min(1, fadeInValue))
+            }
         }
     }
 
     applyTransitionEffects() {
-        let fadeValue = 1.0
-
-        if (this.transitionPhase === 'fade-out') {
-            // Fade out: 1.0 -> 0.0 during first half
-            const fadeOutProgress = Math.min(this.transitionProgress * 2, 1)
-            fadeValue = 1.0 - fadeOutProgress
-        } else if (this.transitionPhase === 'fade-in') {
-            // Fade in: 0.0 -> 1.0 during second half
-            const fadeInProgress = Math.max((this.transitionProgress - 0.5) * 2, 0)
-            fadeValue = fadeInProgress
-        }
-
-        // Apply fade only to the current active act
-        const actToFade = this.transitionPhase === 'fade-out' ? this.previousAct : this.currentAct
-        if (actToFade && actToFade.group) {
-            this.applyFadeToGroup(actToFade.group, fadeValue)
-        }
+        // Legacy transition method - kept for compatibility
+        this.applySmoothTransitionEffects()
     }
 
     applyFadeToGroup(group, fadeValue) {

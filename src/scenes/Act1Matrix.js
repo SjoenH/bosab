@@ -12,6 +12,7 @@ export class Act1Matrix {
 
         this.isActive = false
         this.time = 0
+        this.transitionState = 'idle' // 'idle', 'exiting', 'entering', 'active'
 
         this.colors = {
             primary: new THREE.Color(0x00ff41),
@@ -188,14 +189,95 @@ export class Act1Matrix {
 
     enter() {
         this.isActive = true
+        this.transitionState = 'active'
         this.group.visible = true
         console.log('🔢 Entering Act 1 - Matrix')
     }
 
     exit() {
         this.isActive = false
+        this.transitionState = 'idle'
         this.group.visible = false
         console.log('🔢 Exiting Act 1 - Matrix')
+    }
+
+    // Enhanced transition methods
+    prepareEntry() {
+        this.transitionState = 'entering'
+        this.group.visible = true
+
+        // Position elements off-screen for entry animation
+        this.dataStreams.forEach((stream, columnIndex) => {
+            stream.forEach(particle => {
+                particle.position.y += 50 // Start above screen
+                particle.material.opacity = 0
+            })
+        })
+
+        this.waveforms.forEach(waveform => {
+            waveform.position.x = -50 // Start off left side
+            waveform.material.opacity = 0
+        })
+    }
+
+    startEntry() {
+        this.transitionState = 'entering'
+        this.isActive = true
+    }
+
+    startExit() {
+        this.transitionState = 'exiting'
+    }
+
+    finishExit() {
+        this.group.visible = false
+    }
+
+    updateTransition(progress, direction) {
+        const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+        const easedProgress = easeInOutQuad(progress)
+
+        if (direction === 'enter') {
+            // Animate data streams falling into place
+            this.dataStreams.forEach((stream, columnIndex) => {
+                stream.forEach((particle, particleIndex) => {
+                    const delay = (columnIndex * 0.1 + particleIndex * 0.02) % 1
+                    const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.8))
+
+                    // Animate Y position from above screen to final position
+                    const targetY = particle.userData.originalY || (Math.random() * 40 - 20)
+                    if (!particle.userData.originalY) particle.userData.originalY = targetY
+
+                    particle.position.y = targetY + (1 - adjustedProgress) * 50
+                    particle.material.opacity = adjustedProgress * particle.userData.opacity
+                })
+            })
+
+            // Animate waveforms sliding in from left
+            this.waveforms.forEach((waveform, index) => {
+                const delay = index * 0.1
+                const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.7))
+
+                waveform.position.x = -50 + adjustedProgress * 50
+                waveform.material.opacity = adjustedProgress * 0.6
+            })
+
+        } else if (direction === 'exit') {
+            // Animate elements flowing away
+            this.dataStreams.forEach((stream, columnIndex) => {
+                stream.forEach(particle => {
+                    // Accelerate downward and fade
+                    particle.position.y -= easedProgress * 10
+                    particle.material.opacity *= (1 - easedProgress * 0.8)
+                })
+            })
+
+            this.waveforms.forEach(waveform => {
+                // Slide out to the right
+                waveform.position.x = easedProgress * 50
+                waveform.material.opacity = (1 - easedProgress) * 0.6
+            })
+        }
     }
 
     updateBackground(time) {

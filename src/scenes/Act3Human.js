@@ -13,6 +13,7 @@ export class Act3Human {
 
         this.isActive = false
         this.time = 0
+        this.transitionState = 'idle'
 
         this.colors = {
             flow: new THREE.Color(0xffdbac),
@@ -206,14 +207,118 @@ export class Act3Human {
 
     enter() {
         this.isActive = true
+        this.transitionState = 'active'
         this.group.visible = true
         console.log('🫀 Entering Act 3 - Human')
     }
 
     exit() {
         this.isActive = false
+        this.transitionState = 'idle'
         this.group.visible = false
         console.log('🫀 Exiting Act 3 - Human')
+    }
+
+    // Enhanced transition methods
+    prepareEntry() {
+        this.transitionState = 'entering'
+        this.group.visible = true
+
+        // Start flowing particles in contracted state
+        this.flowingParticles.forEach((stream, index) => {
+            stream.scale.setScalar(0.1) // Start very small
+            stream.material.opacity = 0
+        })
+
+        // Start heart center small and hidden
+        if (this.heartCenter) {
+            this.heartCenter.scale.setScalar(0.1)
+            this.heartCenter.material.opacity = 0
+        }
+
+        // Start connection lines retracted
+        this.connectionLines.forEach(line => {
+            line.scale.setScalar(0.1)
+            line.material.opacity = 0
+        })
+    }
+
+    startEntry() {
+        this.transitionState = 'entering'
+        this.isActive = true
+    }
+
+    startExit() {
+        this.transitionState = 'exiting'
+    }
+
+    finishExit() {
+        this.group.visible = false
+    }
+
+    updateTransition(progress, direction) {
+        const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+        const easedProgress = easeInOutQuad(progress)
+
+        if (direction === 'enter') {
+            // Animate flowing particles expanding organically
+            this.flowingParticles.forEach((stream, index) => {
+                const delay = index * 0.08
+                const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.7))
+
+                // Organic growth from center
+                const targetScale = 1.0
+                stream.scale.setScalar(0.1 + adjustedProgress * 0.9)
+                stream.material.opacity = adjustedProgress * 0.7
+
+                // Spiral out from center
+                const spiralRadius = adjustedProgress * 1.5
+                stream.position.x = Math.cos(index * Math.PI / 3) * spiralRadius * (1 - adjustedProgress)
+                stream.position.z = Math.sin(index * Math.PI / 3) * spiralRadius * (1 - adjustedProgress)
+            })
+
+            // Heart center pulses into existence
+            if (this.heartCenter) {
+                const heartProgress = Math.max(0, (easedProgress - 0.3) / 0.7)
+                this.heartCenter.scale.setScalar(0.1 + heartProgress * 0.9)
+                this.heartCenter.material.opacity = heartProgress * 0.8
+            }
+
+            // Connection lines grow outward
+            this.connectionLines.forEach((line, index) => {
+                const delay = 0.4 + index * 0.05
+                const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.5))
+
+                line.scale.setScalar(adjustedProgress)
+                line.material.opacity = adjustedProgress * line.userData.originalOpacity
+            })
+
+        } else if (direction === 'exit') {
+            // Animate organic dissolution
+            this.flowingParticles.forEach((stream, index) => {
+                // Spiral inward and fade
+                const spiralIn = easedProgress
+                stream.scale.setScalar(1.0 - spiralIn * 0.9)
+                stream.material.opacity = (1 - spiralIn) * 0.7
+
+                // Move toward center
+                stream.position.x *= (1 - spiralIn * 0.5)
+                stream.position.z *= (1 - spiralIn * 0.5)
+            })
+
+            // Heart center fades with final pulse
+            if (this.heartCenter) {
+                const heartScale = 1.0 + easedProgress * 0.5 - easedProgress * 1.5 // Pulse then shrink
+                this.heartCenter.scale.setScalar(Math.max(0, heartScale))
+                this.heartCenter.material.opacity = (1 - easedProgress) * 0.8
+            }
+
+            // Connection lines retract
+            this.connectionLines.forEach(line => {
+                line.scale.setScalar(1.0 - easedProgress)
+                line.material.opacity = (1 - easedProgress) * line.userData.originalOpacity
+            })
+        }
     }
 
     dispose() {

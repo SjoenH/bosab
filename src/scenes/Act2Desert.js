@@ -12,6 +12,7 @@ export class Act2Desert {
 
         this.isActive = false
         this.time = 0
+        this.transitionState = 'idle'
 
         this.colors = {
             sand: new THREE.Color(0xd4a574),
@@ -54,7 +55,8 @@ export class Act2Desert {
             wave.userData = {
                 originalPoints: [...points],
                 waveIndex: w,
-                phase: w * Math.PI / 4
+                phase: w * Math.PI / 4,
+                originalY: y
             }
 
             this.group.add(wave)
@@ -179,14 +181,112 @@ export class Act2Desert {
 
     enter() {
         this.isActive = true
+        this.transitionState = 'active'
         this.group.visible = true
         console.log('🏜️ Entering Act 2 - Desert')
     }
 
     exit() {
         this.isActive = false
+        this.transitionState = 'idle'
         this.group.visible = false
         console.log('🏜️ Exiting Act 2 - Desert')
+    }
+
+    // Enhanced transition methods
+    prepareEntry() {
+        this.transitionState = 'entering'
+        this.group.visible = true
+
+        // Position terrain waves off-screen for entry
+        this.terrainWaves.forEach((wave, index) => {
+            wave.position.z = -20 // Start behind camera
+            wave.material.opacity = 0
+        })
+
+        // Start sand particles scattered
+        if (this.sandParticles) {
+            const positions = this.sandParticles.geometry.attributes.position.array
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 200 // Wider spread initially
+                positions[i + 1] = Math.random() * 50 + 20 // Higher up
+                positions[i + 2] = (Math.random() - 0.5) * 200
+            }
+            this.sandParticles.geometry.attributes.position.needsUpdate = true
+            this.sandParticles.material.opacity = 0
+        }
+    }
+
+    startEntry() {
+        this.transitionState = 'entering'
+        this.isActive = true
+    }
+
+    startExit() {
+        this.transitionState = 'exiting'
+    }
+
+    finishExit() {
+        this.group.visible = false
+    }
+
+    updateTransition(progress, direction) {
+        const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+        const easedProgress = easeInOutQuad(progress)
+
+        if (direction === 'enter') {
+            // Animate terrain waves rolling in
+            this.terrainWaves.forEach((wave, index) => {
+                const delay = index * 0.05
+                const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.8))
+
+                // Roll in from behind camera
+                wave.position.z = -20 + adjustedProgress * 20
+                wave.material.opacity = adjustedProgress * 0.6
+            })
+
+            // Animate sand particles settling
+            if (this.sandParticles) {
+                const targetOpacity = 0.4
+                this.sandParticles.material.opacity = easedProgress * targetOpacity
+
+                // Gradually settle particles into normal range
+                const positions = this.sandParticles.geometry.attributes.position.array
+                for (let i = 0; i < positions.length; i += 3) {
+                    if (Math.abs(positions[i]) > 60) {
+                        positions[i] *= (1 - easedProgress * 0.1) // Gradually pull in
+                    }
+                    if (positions[i + 1] > 15) {
+                        positions[i + 1] *= (1 - easedProgress * 0.05) // Settle down
+                    }
+                }
+                this.sandParticles.geometry.attributes.position.needsUpdate = true
+            }
+
+        } else if (direction === 'exit') {
+            // Animate terrain dissolving away
+            this.terrainWaves.forEach((wave, index) => {
+                // Sink into ground and fade
+                wave.position.y = wave.userData.originalY - easedProgress * 10
+                wave.material.opacity = (1 - easedProgress) * 0.6
+            })
+
+            // Blow sand particles away
+            if (this.sandParticles) {
+                this.sandParticles.material.opacity = (1 - easedProgress) * 0.4
+
+                const positions = this.sandParticles.geometry.attributes.position.array
+                const velocities = this.sandParticles.geometry.attributes.velocity.array
+
+                for (let i = 0; i < positions.length; i += 3) {
+                    // Accelerate particles away
+                    positions[i] += velocities[i] * easedProgress * 20
+                    positions[i + 1] += velocities[i + 1] * easedProgress * 10 + easedProgress * 5 // Lift up
+                    positions[i + 2] += velocities[i + 2] * easedProgress * 20
+                }
+                this.sandParticles.geometry.attributes.position.needsUpdate = true
+            }
+        }
     }
 
     updateBackground(time) {

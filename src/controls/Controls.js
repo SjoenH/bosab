@@ -2,6 +2,7 @@ export class Controls {
     constructor(app) {
         this.app = app
         this.playButton = null
+        this.fullscreenButton = null
         this.actIndicator = null
         this.micStatus = null
         this.volumeLevel = null
@@ -14,6 +15,7 @@ export class Controls {
 
     init() {
         this.playButton = document.getElementById('playButton')
+        this.fullscreenButton = document.getElementById('fullscreenButton')
         this.actIndicator = document.getElementById('actIndicator')
         this.micStatus = document.getElementById('micStatus')
         this.volumeLevel = document.getElementById('volumeLevel')
@@ -28,6 +30,7 @@ export class Controls {
         }
 
         this.setupPlayButton()
+        this.setupFullscreenButton()
         this.updateActIndicator(1)
         this.updateMicrophoneStatus('disconnected')
         this.isInitialized = true
@@ -47,6 +50,34 @@ export class Controls {
                 this.showMicrophoneStatus(connected)
             }
         }, { once: true })
+    }
+
+    setupFullscreenButton() {
+        if (!this.fullscreenButton) return
+
+        this.fullscreenButton.addEventListener('click', () => {
+            this.app.toggleFullscreen()
+        })
+
+        // Listen for fullscreen changes to update button state
+        document.addEventListener('fullscreenchange', () => {
+            this.updateFullscreenButton()
+        })
+
+        // Update initial state
+        this.updateFullscreenButton()
+    }
+
+    updateFullscreenButton() {
+        if (!this.fullscreenButton) return
+
+        if (document.fullscreenElement) {
+            this.fullscreenButton.textContent = '⛶ Exit Fullscreen'
+            this.fullscreenButton.classList.add('active')
+        } else {
+            this.fullscreenButton.textContent = '⛶ Fullscreen'
+            this.fullscreenButton.classList.remove('active')
+        }
     }
 
     updatePlayButton(isPlaying) {

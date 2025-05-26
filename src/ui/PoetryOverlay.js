@@ -7,19 +7,19 @@ export class PoetryOverlay {
 
         // The poem lines for Act 3
         this.poemLines = [
-            "I saw you, at least I think I did, see you,",
+            "I saw you, at least I think I did see you,",
             "beneath your skin and bones",
             "the hunger, the thirst,",
             "I did not feel it at first.",
             "Maybe it could be our souls",
             "",
-            "River of life runnin in our veins,",
-            "drummin the here and now",
-            "I'm longing for somthin that can sustain,",
+            "River of life running in our veins,",
+            "drumming the here and now",
+            "I'm longing for something that can sustain,",
             "to eat, to drink, somehow",
             "",
-            "I traveled far, was searchin wide,",
-            "lookin for that door",
+            "I traveled far, was searching wide,",
+            "looking for that door",
             "until I saw a glimpse of you",
             "when we started walking into",
             "",
@@ -147,19 +147,22 @@ export class PoetryOverlay {
         const volume = audioAnalyzer.getVolume()
         const midFreq = audioAnalyzer.getMidFreq()
 
-        // Text glow effect based on volume
-        const glowIntensity = volume * 10 + 2
+        // Enhanced text glow effect based on volume
+        const glowIntensity = volume * 15 + 3
         this.overlay.style.textShadow = `
-      0 0 ${glowIntensity}px rgba(255, 255, 255, ${volume * 0.5}),
-      2px 2px 4px rgba(0, 0, 0, 0.8)
+      2px 2px 8px rgba(0, 0, 0, 0.9),
+      0 0 ${glowIntensity}px rgba(255, 255, 255, ${volume * 0.4}),
+      0 0 ${glowIntensity * 2}px rgba(255, 255, 255, ${volume * 0.2}),
+      0 0 40px rgba(255, 255, 255, 0.1)
     `
 
         // Subtle text scaling on mid frequencies
-        const scale = 1 + midFreq * 0.1
+        const scale = 1 + midFreq * 0.08
         this.overlay.style.transform = `translate(-50%, -50%) scale(${scale})`
 
-        // Color shift based on frequency
-        const hue = midFreq * 60 // 0-60 degrees (red to yellow)
-        this.overlay.style.color = `hsl(${hue}, 70%, 90%)`
+        // Warm color shift based on frequency for poetic atmosphere
+        const hue = 45 + midFreq * 30 // Golden to warm white range
+        const saturation = 20 + volume * 30
+        this.overlay.style.color = `hsl(${hue}, ${saturation}%, 95%)`
     }
 }

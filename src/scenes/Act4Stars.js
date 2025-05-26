@@ -12,6 +12,7 @@ export class Act4Stars {
 
         this.isActive = false
         this.time = 0
+        this.transitionState = 'idle'
 
         this.colors = {
             star: new THREE.Color(0xffffff),
@@ -180,14 +181,139 @@ export class Act4Stars {
 
     enter() {
         this.isActive = true
+        this.transitionState = 'active'
         this.group.visible = true
         console.log('✨ Entering Act 4 - Stars')
     }
 
     exit() {
         this.isActive = false
+        this.transitionState = 'idle'
         this.group.visible = false
         console.log('✨ Exiting Act 4 - Stars')
+    }
+
+    // Enhanced transition methods
+    prepareEntry() {
+        this.transitionState = 'entering'
+        this.group.visible = true
+
+        // Start stars collapsed at center
+        if (this.starfield) {
+            const positions = this.starfield.geometry.attributes.position.array
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] *= 0.01 // Collapse to center
+                positions[i + 1] *= 0.01
+                positions[i + 2] *= 0.01
+            }
+            this.starfield.geometry.attributes.position.needsUpdate = true
+            this.starfield.material.opacity = 0
+        }
+
+        // Start cosmic dust concentrated
+        if (this.cosmicDust) {
+            const positions = this.cosmicDust.geometry.attributes.position.array
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] *= 0.1
+                positions[i + 1] *= 0.1
+                positions[i + 2] *= 0.1
+            }
+            this.cosmicDust.geometry.attributes.position.needsUpdate = true
+            this.cosmicDust.material.opacity = 0
+        }
+    }
+
+    startEntry() {
+        this.transitionState = 'entering'
+        this.isActive = true
+    }
+
+    startExit() {
+        this.transitionState = 'exiting'
+    }
+
+    finishExit() {
+        this.group.visible = false
+    }
+
+    updateTransition(progress, direction) {
+        const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+        const easedProgress = easeInOutQuad(progress)
+
+        if (direction === 'enter') {
+            // Animate stars expanding from center like big bang
+            if (this.starfield) {
+                const positions = this.starfield.geometry.attributes.position.array
+                const targetPositions = this.starfield.userData.originalPositions
+
+                if (!targetPositions) {
+                    // Store original positions
+                    this.starfield.userData.originalPositions = new Float32Array(positions.length)
+                    for (let i = 0; i < positions.length; i++) {
+                        this.starfield.userData.originalPositions[i] = positions[i] / 0.01 // Undo initial collapse
+                    }
+                }
+
+                // Expand from center
+                for (let i = 0; i < positions.length; i += 3) {
+                    const targetX = this.starfield.userData.originalPositions[i]
+                    const targetY = this.starfield.userData.originalPositions[i + 1]
+                    const targetZ = this.starfield.userData.originalPositions[i + 2]
+
+                    positions[i] = targetX * easedProgress
+                    positions[i + 1] = targetY * easedProgress
+                    positions[i + 2] = targetZ * easedProgress
+                }
+                this.starfield.geometry.attributes.position.needsUpdate = true
+                this.starfield.material.opacity = easedProgress * 0.8
+            }
+
+            // Animate cosmic dust spreading out
+            if (this.cosmicDust) {
+                const positions = this.cosmicDust.geometry.attributes.position.array
+                const targetPositions = this.cosmicDust.userData.originalPositions
+
+                if (!targetPositions) {
+                    // Store original positions
+                    this.cosmicDust.userData.originalPositions = new Float32Array(positions.length)
+                    for (let i = 0; i < positions.length; i++) {
+                        this.cosmicDust.userData.originalPositions[i] = positions[i] / 0.1
+                    }
+                }
+
+                for (let i = 0; i < positions.length; i += 3) {
+                    const targetX = this.cosmicDust.userData.originalPositions[i]
+                    const targetY = this.cosmicDust.userData.originalPositions[i + 1]
+                    const targetZ = this.cosmicDust.userData.originalPositions[i + 2]
+
+                    positions[i] = targetX * easedProgress
+                    positions[i + 1] = targetY * easedProgress
+                    positions[i + 2] = targetZ * easedProgress
+                }
+                this.cosmicDust.geometry.attributes.position.needsUpdate = true
+                this.cosmicDust.material.opacity = easedProgress * 0.3
+            }
+
+        } else if (direction === 'exit') {
+            // Animate stars drifting away and fading
+            if (this.starfield) {
+                const positions = this.starfield.geometry.attributes.position.array
+
+                for (let i = 0; i < positions.length; i += 3) {
+                    // Drift outward
+                    positions[i] *= (1 + easedProgress * 0.5)
+                    positions[i + 1] *= (1 + easedProgress * 0.5)
+                    positions[i + 2] *= (1 + easedProgress * 0.5)
+                }
+                this.starfield.geometry.attributes.position.needsUpdate = true
+                this.starfield.material.opacity = (1 - easedProgress) * 0.8
+            }
+
+            // Cosmic dust disperses
+            if (this.cosmicDust) {
+                this.cosmicDust.material.opacity = (1 - easedProgress) * 0.3
+            }
+        }
     }
 
     updateBackground(deltaTime) {

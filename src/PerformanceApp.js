@@ -300,7 +300,7 @@ export class PerformanceApp {
     async toggleMicrophone() {
         const wasConnected = this.audioAnalyzer.isMicrophoneConnected
         await this.audioAnalyzer.toggleMicrophone()
-        
+
         // Show status after toggle
         if (!wasConnected && this.audioAnalyzer.isMicrophoneConnected) {
             this.controls.showMicrophoneStatus(true)

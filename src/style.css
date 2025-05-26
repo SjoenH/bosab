@@ -9,7 +9,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #fff;
 }
 
@@ -55,6 +55,26 @@ html, body {
 
 #playButton.playing {
   background: rgba(255, 100, 100, 0.3);
+}
+
+#fullscreenButton {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+#fullscreenButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#fullscreenButton.active {
+  background: rgba(100, 200, 100, 0.3);
+  border-color: rgba(100, 255, 100, 0.5);
 }
 
 #actIndicator {
@@ -176,13 +196,16 @@ html, body {
   transform: translate(-50%, -50%);
   z-index: 50;
   text-align: center;
-  font-size: 2rem;
-  font-weight: 300;
-  line-height: 1.6;
+  font-family: 'Crimson Text', 'Times New Roman', serif;
+  font-size: 2.5rem;
+  font-weight: 400;
+  line-height: 1.4;
   max-width: 80vw;
   opacity: 0;
   transition: opacity 2s ease-in-out;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.02em;
+  color: #f8f8f8;
 }
 
 #poetryOverlay.visible {
@@ -197,8 +220,16 @@ html, body {
   }
   
   #poetryOverlay {
-    font-size: 1.5rem;
+    font-size: 2rem;
     max-width: 90vw;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 480px) {
+  #poetryOverlay {
+    font-size: 1.6rem;
+    max-width: 95vw;
   }
 }
 
