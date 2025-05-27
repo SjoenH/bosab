@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Transition Test - Beneath Our Skin and Bones</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        #test-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        #camera-debug {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-family: monospace;
+            font-size: 12px;
+            min-width: 300px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        .debug-section {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+
+        .debug-title {
+            color: #4CAF50;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="test-controls">
+        <h3>Camera Transition Test</h3>
+        <div>
+            <button onclick="testTransition(1)">Go to Act 1</button>
+            <button onclick="testTransition(2)">Go to Act 2</button>
+            <button onclick="testTransition(3)">Go to Act 3</button>
+            <button onclick="testTransition(4)">Go to Act 4</button>
+        </div>
+        <div>
+            <button onclick="showOverview()">Overview Position</button>
+            <button onclick="runAutomatedTest()">Run Automated Test</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        <div id="test-log"
+            style="margin-top: 15px; max-height: 200px; overflow-y: auto; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 4px;">
+        </div>
+    </div>
+
+    <div id="camera-debug">
+        <div class="debug-title">Camera Debug Info</div>
+
+        <div class="debug-section">
+            <div class="debug-title">Three.js Camera</div>
+            <div id="threejs-position">Position: Loading...</div>
+            <div id="threejs-target">Target: Loading...</div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-title">XState Context</div>
+            <div id="state-position">Position: Loading...</div>
+            <div id="state-target">Target: Loading...</div>
+            <div id="state-act">Act: Loading...</div>
+            <div id="state-transitioning">Transitioning: Loading...</div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-title">Camera Controller</div>
+            <div id="controller-transitioning">In Transition: Loading...</div>
+            <div id="controller-progress">Progress: Loading...</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script type="module">
+        import { PerformanceApp } from './src/PerformanceApp.ts';
+
+        // Global variables for testing
+        let app;
+        let updateInterval;
+
+        // Test functions
+        window.testTransition = function (actNumber) {
+            if (!app) return;
+
+            logMessage(`🎬 Starting transition to Act ${actNumber}`);
+            app.setAct(actNumber);
+        };
+
+        window.showOverview = function () {
+            if (!app || !app.sceneManager) return;
+
+            logMessage('🔍 Moving to overview position');
+            const sceneManager = app.sceneManager;
+            if (sceneManager.showOverview) {
+                sceneManager.showOverview();
+            }
+        };
+
+        window.runAutomatedTest = function () {
+            if (!app) return;
+
+            logMessage('🤖 Starting automated camera transition test...');
+            logMessage('📋 Test sequence: Overview → Act 1 → Act 2 → Act 3 → Act 4 → Overview');
+
+            const sequence = [
+                { action: 'overview', delay: 0 },
+                { action: 1, delay: 3000 },
+                { action: 2, delay: 6000 },
+                { action: 3, delay: 9000 },
+                { action: 4, delay: 12000 },
+                { action: 'overview', delay: 15000 }
+            ];
+
+            sequence.forEach(({ action, delay }) => {
+                setTimeout(() => {
+                    if (action === 'overview') {
+                        logMessage('🔍 Auto-moving to overview position');
+                        showOverview();
+                    } else {
+                        logMessage(`🎬 Auto-transitioning to Act ${action}`);
+                        app.setAct(action);
+                    }
+                }, delay);
+            });
+
+            setTimeout(() => {
+                logMessage('✅ Automated test completed');
+            }, 18000);
+        };
+
+        window.clearLog = function () {
+            const log = document.getElementById('test-log');
+            if (log) log.innerHTML = '';
+        };
+
+        function logMessage(message) {
+            const log = document.getElementById('test-log');
+            if (log) {
+                const timestamp = new Date().toLocaleTimeString();
+                log.innerHTML += `<div style="margin: 2px 0; font-size: 11px;"><span style="color: #888;">[${timestamp}]</span> ${message}</div>`;
+                log.scrollTop = log.scrollHeight;
+            }
+            console.log(message);
+        }
+
+        function formatVector3(vector) {
+            if (!vector) return 'null';
+            return `(${vector.x.toFixed(2)}, ${vector.y.toFixed(2)}, ${vector.z.toFixed(2)})`;
+        }
+
+        function updateDebugInfo() {
+            if (!app) return;
+
+            try {
+                // Get Three.js camera
+                const camera = app.camera;
+
+                // Get state manager
+                const stateManager = app.getStateManager();
+                const context = stateManager.getContext();
+
+                // Get scene manager and camera controller
+                const sceneManager = app.sceneManager;
+                const cameraController = sceneManager ? sceneManager.getCameraController() : null;
+
+                // Update Three.js camera info
+                document.getElementById('threejs-position').textContent =
+                    `Position: ${formatVector3(camera?.position)}`;
+
+                // Calculate camera target (approximate)
+                const target = camera ? new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position) : null;
+                document.getElementById('threejs-target').textContent =
+                    `Target: ${formatVector3(target)}`;
+
+                // Update XState context info
+                document.getElementById('state-position').textContent =
+                    `Position: ${formatVector3(context.cameraPosition)}`;
+                document.getElementById('state-target').textContent =
+                    `Target: ${formatVector3(context.cameraTarget)}`;
+                document.getElementById('state-act').textContent =
+                    `Act: ${context.currentAct}`;
+                document.getElementById('state-transitioning').textContent =
+                    `Transitioning: ${context.isTransitioning}`;
+
+                // Update Camera Controller info
+                if (cameraController) {
+                    const controllerState = cameraController.getCurrentState();
+                    document.getElementById('controller-transitioning').textContent =
+                        `In Transition: ${controllerState.isTransitioning}`;
+                    document.getElementById('controller-progress').textContent =
+                        `Progress: ${(controllerState.transitionProgress * 100).toFixed(1)}%`;
+                } else {
+                    document.getElementById('controller-transitioning').textContent = 'In Transition: N/A';
+                    document.getElementById('controller-progress').textContent = 'Progress: N/A';
+                }
+
+            } catch (error) {
+                console.error('Debug update error:', error);
+            }
+        }
+
+        // Initialize the app
+        async function init() {
+            try {
+                logMessage('🚀 Initializing Performance App...');
+
+                app = new PerformanceApp();
+                await app.init();
+
+                // Make app globally available for debugging
+                window.app = app;
+
+                logMessage('✅ Performance App initialized');
+                logMessage('📝 Use the buttons above to test camera transitions');
+                logMessage('👀 Watch the debug panel to see camera state synchronization');
+
+                // Start debug info updates
+                updateInterval = setInterval(updateDebugInfo, 100); // 10 FPS for debug info
+
+            } catch (error) {
+                logMessage(`❌ Initialization failed: ${error.message}`);
+                console.error('Initialization error:', error);
+            }
+        }
+
+        // Start the app
+        init();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            if (app) {
+                app.dispose();
+            }
+        });
+    </script>
+</body>
+
+</html>

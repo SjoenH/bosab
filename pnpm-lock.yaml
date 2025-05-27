@@ -11,6 +11,9 @@ importers:
       three:
         specifier: ^0.176.0
         version: 0.176.0
+      xstate:
+        specifier: ^5.19.3
+        version: 5.19.3
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -921,6 +924,9 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  xstate@5.19.3:
+    resolution: {integrity: sha512-q6sqD7LuontFVxQoGB7D6NkQRDLzs87qzQhUKvI0osKKK8xxktZBT7uwfisjh7Yi5VB2cN9NOpCSxJNpUPQCeg==}
+
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
@@ -1689,5 +1695,7 @@ snapshots:
       isexe: 2.0.0
 
   word-wrap@1.2.5: {}
+
+  xstate@5.19.3: {}
 
   yocto-queue@0.1.0: {}

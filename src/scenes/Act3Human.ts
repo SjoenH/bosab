@@ -10,20 +10,20 @@ import { BaseAct } from './BaseAct';
 import type { AudioData, AudioAnalyzerInterface } from '../types';
 
 export class Act3Human extends BaseAct {
-    private particleCount: number = 25000; // Much more particles for better definition
+    private particleCount = 25000; // Much more particles for better definition
     private particleGeometry: THREE.BufferGeometry = new THREE.BufferGeometry();
     private particleMaterial: THREE.PointsMaterial = new THREE.PointsMaterial();
     private flowField: Float32Array = new Float32Array(25000 * 3);
     private velocities: Float32Array = new Float32Array(25000 * 3);
-    private heartPhase: number = 0;
-    private lastHeartbeat: number = 0;
-    private heartbeatInterval: number = 800; // Base interval in ms (75 BPM)
+    private heartPhase = 0;
+    private lastHeartbeat = 0;
+    private heartbeatInterval = 800; // Base interval in ms (75 BPM)
     private heartCenter: THREE.Vector3 = new THREE.Vector3(0, 5, 0); // Move heart up for better framing
-    private heartScale: number = 2; // Very small initial size
-    private autoHeartbeat: boolean = true; // Enable automatic heartbeat
-    private heartbeatCycle: number = 0; // Track the heartbeat cycle for lub-dub pattern
-    private startupDelay: number = 3000; // Wait 3 seconds before starting heartbeat
-    private actStartTime: number = 0; // Track when the act started
+    private heartScale = 2; // Very small initial size
+    private autoHeartbeat = true; // Enable automatic heartbeat
+    private heartbeatCycle = 0; // Track the heartbeat cycle for lub-dub pattern
+    private startupDelay = 3000; // Wait 3 seconds before starting heartbeat
+    private actStartTime = 0; // Track when the act started
 
     protected async createContent(): Promise<void> {
         // Create particles in a planar distribution
@@ -108,7 +108,7 @@ export class Act3Human extends BaseAct {
 
         // Heart curve factor (creates heart shape)
         const heartRadius = this.heartScale * (1 + Math.sin(angle)); // Remove inversion, use regular sine
-        const heartShape = Math.pow(Math.abs(angle) / Math.PI, 0.2); // More pronounced heart shape
+        const heartShape = (Math.abs(angle) / Math.PI) ** 0.2; // More pronounced heart shape
         const force = Math.exp(-radius / (heartRadius * (1 + heartShape))) * 0.05; // Much gentler force
 
         // Create force vector pointing outward from heart

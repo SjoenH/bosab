@@ -21,9 +21,9 @@ export class PerformanceApp {
     private controls: Controls | null = null
     private poetryOverlay: PoetryOverlay | null = null
 
-    private isPlaying: boolean = false
-    private currentAct: number = 1
-    private actStartTime: number = 0
+    private isPlaying = false
+    private currentAct = 1
+    private actStartTime = 0
     private actDuration: number = 6.25 * 60 * 1000 // 6.25 minutes in milliseconds
 
     // Timing configuration
@@ -35,17 +35,15 @@ export class PerformanceApp {
     }
 
     // Performance optimization
-    private lastFrameTime: number = 0
-    private targetFPS: number = 60
+    private lastFrameTime = 0
+    private targetFPS = 60
     private get frameInterval(): number { return 1000 / this.targetFPS }
-
-    constructor() { }
 
     public async init(): Promise<void> {
         try {
             this.showLoading(true)
 
-            await this.setupThreeJS()
+            this.setupThreeJS()
             await this.setupAudio()
             this.setupScenes()
             this.setupControls()
@@ -173,6 +171,9 @@ export class PerformanceApp {
 
     private update(deltaTime: number): void {
         if (!this.audioAnalyzer || !this.sceneManager) return
+
+        // Update audio analyzer to process new data
+        this.audioAnalyzer.update()
 
         // Get audio data
         const audioData: AudioData = this.audioAnalyzer.getAudioData()
