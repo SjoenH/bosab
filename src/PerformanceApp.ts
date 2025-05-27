@@ -176,7 +176,7 @@ export class PerformanceApp {
 	};
 
 	private update(deltaTime: number): void {
-		if (!this.audioAnalyzer || !this.sceneManager || !this.controls) return;
+		if (!this.audioAnalyzer || !this.sceneManager) return;
 
 		// Update audio analyzer to process new data
 		this.audioAnalyzer.update();
@@ -186,10 +186,6 @@ export class PerformanceApp {
 
 		// Update scene manager
 		this.sceneManager.update(audioData, deltaTime);
-
-		// Update controls with the latest audio data
-		// this.audioAnalyzer is an instance of AudioAnalyzer, so the cast is safe.
-		(this.controls as Controls).update(this.audioAnalyzer as AudioAnalyzer);
 
 		// Update poetry overlay
 		if (this.poetryOverlay) {
