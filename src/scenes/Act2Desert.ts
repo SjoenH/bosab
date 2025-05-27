@@ -247,11 +247,8 @@ export class Act2Desert extends BaseAct {
 		// Desert particles remain static - no position updates
 		// All movement logic has been removed to keep the terrain fixed
 
-		// Audio-reactive camera movement (up and down)
-		if (this.camera) {
-			// Get base camera position for this act from layout config
-			const baseCameraY = 0; // Base Y position from layout config for Act 2
-
+		// Audio-reactive camera movement (up and down) - using camera effects system
+		if (this.areCameraEffectsEnabled()) {
 			// Calculate audio-reactive vertical movement
 			const cameraMovementAmplitude = 3; // Maximum vertical movement range
 			const bassMovement = bassLevel * cameraMovementAmplitude; // Bass drives main movement
@@ -260,9 +257,11 @@ export class Act2Desert extends BaseAct {
 			// Combine movements with slight randomness for organic feel
 			const totalMovement = bassMovement + volumeMovement + Math.sin(this.time * 0.001) * 0.5;
 
-			// Apply smooth interpolation to prevent jarring movements
-			const targetY = baseCameraY + totalMovement;
-			this.camera.position.y += (targetY - this.camera.position.y) * 0.1; // Smooth interpolation
+			// Create vertical offset vector
+			const cameraOffset = new THREE.Vector3(0, totalMovement, 0);
+
+			// Apply camera effect (only affects this act when active)
+			this.applyCameraEffect(cameraOffset);
 		}
 
 		// Update dust particle system with movement, terrain collision, and depth culling

@@ -38,6 +38,8 @@ export interface BaseAct {
 	update(audioData: AudioData, deltaTime: number): void;
 	enter(fromAct?: number): Promise<void>;
 	exit(toAct?: number): Promise<void>;
+	activate?(): void;
+	deactivate?(): void;
 	prepareEntry?(): void;
 	dispose(): void;
 	getScene(): THREE.Scene;

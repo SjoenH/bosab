@@ -88,8 +88,8 @@ export class SceneManager implements SceneManagerInterface {
 			beat: false,
 			init: async () => false,
 			requestMicrophone: async () => false,
-			toggleMicrophone: async () => {},
-			update: () => {},
+			toggleMicrophone: async () => { },
+			update: () => { },
 			getAudioData: () => ({
 				frequencyData: new Uint8Array(0),
 				volume: 0,
@@ -106,7 +106,7 @@ export class SceneManager implements SceneManagerInterface {
 			getBeat: () => false,
 			getVolumeNormalized: () => 0,
 			getFrequencyNormalized: () => 0,
-			dispose: () => {},
+			dispose: () => { },
 		};
 	}
 
@@ -189,6 +189,9 @@ export class SceneManager implements SceneManagerInterface {
 		for (const act of Object.values(this.acts)) {
 			act.enter();
 		}
+
+		// Activate only the first act initially (for camera effects)
+		this.acts[1]?.activate?.();
 
 		this.actProgressTimer = performance.now();
 
@@ -288,15 +291,16 @@ export class SceneManager implements SceneManagerInterface {
 	private completeActTransition(): void {
 		if (!this.isTransitioning) return;
 
-		// Complete the transition - but don't exit previous act to keep it visible
-		// if (this.previousAct) {
-		//     this.previousAct.exit()
-		// }
+		// Deactivate the previous act (disable camera effects)
+		this.previousAct?.deactivate?.();
 
 		if (this.nextAct) {
 			this.nextAct.enter();
 			this.currentActInstance = this.nextAct;
 			this.currentAct = this.getActNumber(this.nextAct);
+
+			// Activate the new act (enable camera effects)
+			this.nextAct?.activate?.();
 		}
 
 		// Reset transition state

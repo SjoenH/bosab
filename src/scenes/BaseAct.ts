@@ -15,6 +15,14 @@ import type {
 
 type TransitionState = "idle" | "entering" | "active" | "exiting";
 
+// Camera effect interface for act-specific camera movements
+interface CameraEffect {
+	originalPosition: THREE.Vector3;
+	originalLookAt: THREE.Vector3;
+	isActive: boolean;
+	restoreOnDeactivate: boolean;
+}
+
 export abstract class BaseAct implements BaseActInterface {
 	protected scene: THREE.Scene;
 	protected camera: THREE.Camera;
@@ -74,6 +82,12 @@ export abstract class BaseAct implements BaseActInterface {
 	protected meshes: THREE.Mesh[] = [];
 	protected lines: THREE.Line[] = [];
 	protected materials: THREE.Material[] = [];
+
+	// Camera effect system for act-specific camera movements
+	private cameraEffect: CameraEffect | null = null;
+	private originalCameraPosition: THREE.Vector3 = new THREE.Vector3();
+	private originalCameraLookAt: THREE.Vector3 = new THREE.Vector3();
+	private cameraEffectsEnabled = false;
 
 	constructor(
 		scene: THREE.Scene,
@@ -453,5 +467,89 @@ export abstract class BaseAct implements BaseActInterface {
 		smoothing = 0.1,
 	): number {
 		return current + (target - current) * smoothing;
+	}
+
+	/**
+	 * Enable camera effects for this act (isolates camera movements to this act only)
+	 */
+	protected enableCameraEffects(): void {
+		if (this.cameraEffectsEnabled) return;
+
+		// Store original camera position and look-at
+		this.originalCameraPosition.copy(this.camera.position);
+
+		// Calculate original look-at from camera rotation (approximate)
+		const forward = new THREE.Vector3(0, 0, -1);
+		forward.applyQuaternion(this.camera.quaternion);
+		this.originalCameraLookAt.copy(this.camera.position).add(forward);
+
+		this.cameraEffectsEnabled = true;
+
+		console.log(`📷 Camera effects enabled for Act ${this.actNumber}`);
+	}
+
+	/**
+	 * Disable camera effects and restore original position
+	 */
+	protected disableCameraEffects(): void {
+		if (!this.cameraEffectsEnabled) return;
+
+		// Restore original camera position smoothly
+		this.camera.position.copy(this.originalCameraPosition);
+		this.camera.lookAt(this.originalCameraLookAt);
+
+		this.cameraEffectsEnabled = false;
+
+		console.log(`📷 Camera effects disabled for Act ${this.actNumber}, position restored`);
+	}
+
+	/**
+	 * Apply camera effect offset (only if camera effects are enabled)
+	 */
+	protected applyCameraEffect(offset: THREE.Vector3): void {
+		if (!this.cameraEffectsEnabled) return;
+
+		// Apply offset to camera position
+		const targetPosition = this.originalCameraPosition.clone().add(offset);
+
+		// Smooth interpolation for natural movement
+		this.camera.position.lerp(targetPosition, 0.1);
+	}
+
+	/**
+	 * Check if camera effects are active for this act
+	 */
+	protected areCameraEffectsEnabled(): boolean {
+		return this.cameraEffectsEnabled;
+	}
+
+	/**
+	 * Activate this act (enable camera effects if this act uses them)
+	 */
+	public activate(): void {
+		if (this.isActive) return;
+
+		this.isActive = true;
+		this.transitionState = "active";
+
+		// Enable camera effects for this act
+		this.enableCameraEffects();
+
+		console.log(`🎭 Act ${this.actNumber} activated`);
+	}
+
+	/**
+	 * Deactivate this act (disable camera effects and restore camera)
+	 */
+	public deactivate(): void {
+		if (!this.isActive) return;
+
+		this.isActive = false;
+		this.transitionState = "idle";
+
+		// Disable camera effects and restore original position
+		this.disableCameraEffects();
+
+		console.log(`🎭 Act ${this.actNumber} deactivated`);
 	}
 }
