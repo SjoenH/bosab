@@ -51,6 +51,32 @@ export class Act2Desert extends BaseAct {
 		this.velocities = new Float32Array(this.particleCount * 3);
 		this.turbulence = new Float32Array(this.particleCount * 3);
 
+		// Create circular texture for desert terrain particles
+		const terrainCanvas = document.createElement('canvas');
+		const terrainCtx = terrainCanvas.getContext('2d');
+		if (!terrainCtx) throw new Error('Could not create 2D context for terrain texture');
+		terrainCanvas.width = terrainCanvas.height = 32;
+		const terrainGradient = terrainCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+		terrainGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+		terrainGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+		terrainGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+		terrainCtx.fillStyle = terrainGradient;
+		terrainCtx.fillRect(0, 0, 32, 32);
+		const terrainTexture = new THREE.CanvasTexture(terrainCanvas);
+
+		// Create circular texture for dust particles (softer gradient)
+		const dustCanvas = document.createElement('canvas');
+		const dustCtx = dustCanvas.getContext('2d');
+		if (!dustCtx) throw new Error('Could not create 2D context for dust texture');
+		dustCanvas.width = dustCanvas.height = 64; // Larger for dust particles
+		const dustGradient = dustCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+		dustGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+		dustGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.3)');
+		dustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+		dustCtx.fillStyle = dustGradient;
+		dustCtx.fillRect(0, 0, 64, 64);
+		const dustTexture = new THREE.CanvasTexture(dustCanvas);
+
 		// Create dunes with random dot placement instead of grid
 		for (let i = 0; i < this.particleCount; i++) {
 			// Random positions across the desert area
@@ -94,13 +120,14 @@ export class Act2Desert extends BaseAct {
 			new THREE.BufferAttribute(positions, 3),
 		);
 
-		// Adjust particle material for top-down view
-		this.particleMaterial.size = 0.15;
+		// Adjust particle material for top-down view with circular texture
+		this.particleMaterial.size = 0.2; // Slightly larger for circular particles
 		this.particleMaterial.color = new THREE.Color(0xd4a017);
 		this.particleMaterial.transparent = true;
 		this.particleMaterial.opacity = 0.6;
 		this.particleMaterial.blending = THREE.AdditiveBlending;
-		this.particleMaterial.depthWrite = false; // Better particle blending
+		this.particleMaterial.depthWrite = false;
+		this.particleMaterial.map = terrainTexture;
 
 		// Create and add particles
 		this.particles.push(
@@ -158,12 +185,13 @@ export class Act2Desert extends BaseAct {
 			new THREE.BufferAttribute(this.dustPositions, 3),
 		);
 
-		this.dustParticleMaterial.size = 0.1; // Increased initial size
-		this.dustParticleMaterial.color = new THREE.Color(0xb0a090); // Lighter, desaturated sand color
+		this.dustParticleMaterial.size = 0.15;
+		this.dustParticleMaterial.color = new THREE.Color(0xb0a090);
 		this.dustParticleMaterial.transparent = true;
-		this.dustParticleMaterial.opacity = 0.5; // Increased initial opacity
-		this.dustParticleMaterial.blending = THREE.NormalBlending; // Normal blending for a softer look
+		this.dustParticleMaterial.opacity = 0.5;
+		this.dustParticleMaterial.blending = THREE.AdditiveBlending;
 		this.dustParticleMaterial.depthWrite = false;
+		this.dustParticleMaterial.map = dustTexture;
 
 		const dustSystem = new THREE.Points(
 			this.dustParticleGeometry,
@@ -171,11 +199,26 @@ export class Act2Desert extends BaseAct {
 		);
 		dustSystem.name = "DustParticles";
 		this.group.add(dustSystem);
-		// Add to a general particles array if BaseAct handles disposal through it,
-		// or manage separately if needed. For now, let's assume BaseAct can handle it via materials.
-		this.materials.push(this.dustParticleMaterial); // Ensure material is disposed
-		// If you have a this.particles array for THREE.Points objects for other reasons:
-		// this.particles.push(dustSystem);
+		this.materials.push(this.dustParticleMaterial);
+
+		// Create circular texture for wind streaks (elongated gradient)
+		const streakCanvas = document.createElement('canvas');
+		const streakCtx = streakCanvas.getContext('2d');
+		if (!streakCtx) throw new Error('Could not create 2D context for streak texture');
+		streakCanvas.width = streakCanvas.height = 32;
+
+		// Create an elongated gradient for streaks
+		streakCtx.translate(16, 16);
+		streakCtx.rotate(-Math.PI / 4); // Rotate 45 degrees for diagonal streaks
+		const streakGradient = streakCtx.createLinearGradient(-16, 0, 16, 0);
+		streakGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+		streakGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.4)');
+		streakGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+		streakGradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.4)');
+		streakGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+		streakCtx.fillStyle = streakGradient;
+		streakCtx.fillRect(-16, -4, 32, 8); // Elongated rectangle for streak effect
+		const streakTexture = new THREE.CanvasTexture(streakCanvas);
 
 		// Initialize wind streak particle system
 		this.streakPositions = new Float32Array(this.streakParticleCount * 3);
@@ -201,12 +244,13 @@ export class Act2Desert extends BaseAct {
 			new THREE.BufferAttribute(this.streakPositions, 3),
 		);
 
-		this.streakParticleMaterial.size = 0.04;
+		this.streakParticleMaterial.size = 0.08;
 		this.streakParticleMaterial.color = new THREE.Color(0xffffff);
 		this.streakParticleMaterial.transparent = true;
 		this.streakParticleMaterial.opacity = 0.25;
 		this.streakParticleMaterial.blending = THREE.AdditiveBlending;
 		this.streakParticleMaterial.depthWrite = false;
+		this.streakParticleMaterial.map = streakTexture;
 
 		const streakSystem = new THREE.Points(
 			this.streakParticleGeometry,
