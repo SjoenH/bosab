@@ -7,6 +7,7 @@
 
 import * as THREE from 'three'
 import type { AudioData, BaseAct as BaseActInterface, AudioAnalyzerInterface } from '../types'
+import { LayoutHelper } from '../config/LayoutConfig'
 
 type TransitionState = 'idle' | 'entering' | 'active' | 'exiting'
 
@@ -122,33 +123,13 @@ export abstract class BaseAct implements BaseActInterface {
      * Apply layout position from config
      */
     protected applyLayoutPosition(): void {
-        // Default spatial layout with proper spacing
-        const spacing = 75; // Increased spacing for better visual separation
-        const heightOffset = 10; // Slight height variation for depth
-        const depth = -20; // Push acts back for better perspective
-
-        // Calculate position based on act number
-        switch (this.actNumber) {
-            case 1:
-                this.actPosition.set(-spacing, 0, depth);
-                break;
-            case 2:
-                this.actPosition.set(-spacing / 3, heightOffset, depth);
-                break;
-            case 3:
-                this.actPosition.set(spacing / 3, heightOffset, depth);
-                break;
-            case 4:
-                this.actPosition.set(spacing, 0, depth);
-                break;
-            default:
-                this.actPosition.set(0, 0, depth);
-        }
+        // Get position from layout config
+        this.actPosition = LayoutHelper.getActPosition(this.actNumber);
 
         // Position the entire group
         this.group.position.copy(this.actPosition);
 
-        console.log(`📐 Act ${this.actNumber} positioned at:`, this.actPosition);
+        console.log(`📐 Act ${this.actNumber} positioned at:`, this.actPosition.toArray().join(', '));
     }
 
     /**

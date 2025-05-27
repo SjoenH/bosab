@@ -91,56 +91,56 @@ export const LAYOUT_CONFIG: LayoutConfigType = {
         far: 1000,
 
         // Transition timing (milliseconds)
-        transitionDuration: 3000,
+        transitionDuration: 3500, // Slightly longer for more graceful movement
 
         // Easing function for camera movement
-        easing: 'easeInOutCubic', // 'linear', 'easeInOut', 'easeInOutCubic'
+        easing: 'easeInOutQuart', // More dramatic easing for artistic transitions
 
         // Look-at behavior during transitions
         smoothLookAt: true,
-        lookAtTransitionDuration: 2000
+        lookAtTransitionDuration: 2500 // Matched with main transition
     },
 
     // Act positioning - each act gets its own 3D space
     acts: {
         1: {
             name: 'Matrix',
-            position: new THREE.Vector3(-75, 0, 0),
-            cameraPosition: new THREE.Vector3(-75, 0, 15),
-            cameraLookAt: new THREE.Vector3(-75, 0, 0),
+            position: new THREE.Vector3(0, 0, -50),        // North
+            cameraPosition: new THREE.Vector3(0, 0, -35),  // Closer to act for better view
+            cameraLookAt: new THREE.Vector3(0, 0, -50),    // Look North
             boundingBox: {
-                min: new THREE.Vector3(-100, -25, -25),
-                max: new THREE.Vector3(-50, 25, 25)
+                min: new THREE.Vector3(-25, -25, -60),
+                max: new THREE.Vector3(25, 25, -40)
             }
         },
         2: {
             name: 'Desert',
-            position: new THREE.Vector3(-25, 0, 0),
-            cameraPosition: new THREE.Vector3(-25, 0, 15),
-            cameraLookAt: new THREE.Vector3(-25, 0, 0),
+            position: new THREE.Vector3(50, 0, 0),         // East (removed y offset)
+            cameraPosition: new THREE.Vector3(35, 0, 0),   // Move camera towards act
+            cameraLookAt: new THREE.Vector3(50, 0, 0),     // Look East
             boundingBox: {
-                min: new THREE.Vector3(-50, -25, -25),
-                max: new THREE.Vector3(0, 25, 25)
+                min: new THREE.Vector3(40, -25, -25),
+                max: new THREE.Vector3(60, 25, 25)
             }
         },
         3: {
             name: 'Human',
-            position: new THREE.Vector3(25, 0, 0),
-            cameraPosition: new THREE.Vector3(25, 0, 15),
-            cameraLookAt: new THREE.Vector3(25, 0, 0),
+            position: new THREE.Vector3(0, 0, 50),         // South
+            cameraPosition: new THREE.Vector3(0, 0, 35),   // Move camera towards act
+            cameraLookAt: new THREE.Vector3(0, 0, 50),     // Look South
             boundingBox: {
-                min: new THREE.Vector3(0, -25, -25),
-                max: new THREE.Vector3(50, 25, 25)
+                min: new THREE.Vector3(-25, -25, 40),
+                max: new THREE.Vector3(25, 25, 60)
             }
         },
         4: {
             name: 'Stars',
-            position: new THREE.Vector3(75, 0, 0),
-            cameraPosition: new THREE.Vector3(75, 0, -15),
-            cameraLookAt: new THREE.Vector3(75, 0, 0),
+            position: new THREE.Vector3(-50, 0, 0),        // West
+            cameraPosition: new THREE.Vector3(-35, 0, 0),  // Move camera towards act
+            cameraLookAt: new THREE.Vector3(-50, 0, 0),    // Look West
             boundingBox: {
-                min: new THREE.Vector3(50, -25, -25),
-                max: new THREE.Vector3(100, 25, 25)
+                min: new THREE.Vector3(-60, -25, -25),
+                max: new THREE.Vector3(-40, 25, 25)
             }
         }
     },
