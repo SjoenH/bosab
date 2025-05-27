@@ -79,8 +79,18 @@ export abstract class BaseAct implements BaseActInterface {
         // Setup core group
         this.group = new THREE.Group()
         this.group.name = `Act${actNumber}Group`
+        this.scene.add(this.group)
 
         console.log(`🎭 BaseAct ${actNumber} created`)
+    }
+
+    // Required interface methods
+    public getScene(): THREE.Scene {
+        return this.scene;
+    }
+
+    public getCamera(): THREE.Camera {
+        return this.camera;
     }
 
     /**
@@ -112,14 +122,33 @@ export abstract class BaseAct implements BaseActInterface {
      * Apply layout position from config
      */
     protected applyLayoutPosition(): void {
-        // Default positioning - acts should override this with their specific layout logic
-        const spacing = 50
-        this.actPosition.set((this.actNumber - 2.5) * spacing, 0, 0)
+        // Default spatial layout with proper spacing
+        const spacing = 75; // Increased spacing for better visual separation
+        const heightOffset = 10; // Slight height variation for depth
+        const depth = -20; // Push acts back for better perspective
+
+        // Calculate position based on act number
+        switch (this.actNumber) {
+            case 1:
+                this.actPosition.set(-spacing, 0, depth);
+                break;
+            case 2:
+                this.actPosition.set(-spacing / 3, heightOffset, depth);
+                break;
+            case 3:
+                this.actPosition.set(spacing / 3, heightOffset, depth);
+                break;
+            case 4:
+                this.actPosition.set(spacing, 0, depth);
+                break;
+            default:
+                this.actPosition.set(0, 0, depth);
+        }
 
         // Position the entire group
-        this.group.position.copy(this.actPosition)
+        this.group.position.copy(this.actPosition);
 
-        console.log(`📐 Act ${this.actNumber} positioned at:`, this.actPosition)
+        console.log(`📐 Act ${this.actNumber} positioned at:`, this.actPosition);
     }
 
     /**
@@ -235,6 +264,35 @@ export abstract class BaseAct implements BaseActInterface {
         return Math.max(0, 1 - (distance / maxDistance))
     }
 
+    /**
+     * Get smoothed audio value with interpolation
+     */
+    protected getSmoothedAudio(type: 'volume' | 'bass' | 'mid' | 'treble' | 'average', smoothing: number = 0.1): number {
+        let currentValue: number;
+        switch (type) {
+            case 'volume':
+                currentValue = this.audioLevel;
+                break;
+            case 'bass':
+                currentValue = this.bassLevel;
+                break;
+            case 'mid':
+                currentValue = this.midLevel;
+                break;
+            case 'treble':
+                currentValue = this.trebleLevel;
+                break;
+            case 'average':
+                currentValue = (this.audioLevel + this.bassLevel + this.midLevel + this.trebleLevel) / 4;
+                break;
+            default:
+                currentValue = this.audioLevel;
+        }
+
+        // Smoothly interpolate to target value
+        return currentValue + (this.audioAnalyzer.getVolume() - currentValue) * smoothing;
+    }
+
     // Abstract methods that must be implemented by subclasses
     protected abstract createContent(): Promise<void>
     protected abstract updateContent(deltaTime: number): void
@@ -283,83 +341,83 @@ export abstract class BaseAct implements BaseActInterface {
     // Utility methods for common operations
 
     /**
-     * Create a fade transition
+     * Create a fade transition with easing
      */
     protected createFadeTransition(duration: number = 1000): Promise<void> {
         return new Promise((resolve) => {
-            const startTime = performance.now()
+            const startTime = performance.now();
+            const startFade = this.fadeValue;
+            const targetFade = this.transitionState === 'entering' ? 1 : 0;
 
             const animate = () => {
-                const elapsed = performance.now() - startTime
-                const progress = Math.min(elapsed / duration, 1)
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
 
-                this.fadeValue = progress
-                this.applyFade(progress)
+                // Apply easing
+                const easeProgress = this.transitionState === 'entering'
+                    ? this.easeOutCubic(progress)
+                    : this.easeInCubic(progress);
+
+                this.fadeValue = startFade + (targetFade - startFade) * easeProgress;
+                this.applyFade(this.fadeValue);
 
                 if (progress < 1) {
-                    requestAnimationFrame(animate)
+                    requestAnimationFrame(animate);
                 } else {
-                    resolve()
+                    this.fadeValue = targetFade;
+                    this.applyFade(this.fadeValue);
+                    resolve();
                 }
-            }
+            };
 
-            animate()
-        })
+            animate();
+        });
     }
 
     /**
-     * Apply fade effect to all materials
+     * Apply fade effect to all materials with enhanced visuals
      */
     protected applyFade(fadeValue: number): void {
+        // Update all materials
         this.materials.forEach(material => {
             if ('opacity' in material) {
-                (material as any).opacity = fadeValue
-                material.transparent = true
+                const mat = material as THREE.Material & { opacity: number };
+                mat.opacity = fadeValue;
+                mat.transparent = true;
+                mat.needsUpdate = true;
+
+                // Enhanced emissive effect during transitions
+                if ('emissiveIntensity' in material) {
+                    (material as any).emissiveIntensity = fadeValue * 2;
+                }
             }
-        })
+        });
+
+        // Scale effect during transitions
+        const scale = this.transitionState === 'entering'
+            ? 0.8 + fadeValue * 0.2  // Scale up when entering
+            : 1 - (1 - fadeValue) * 0.2; // Scale down when exiting
+
+        this.group.scale.setScalar(scale);
     }
 
-    /**
-     * Get normalized audio value with smoothing
-     */
-    protected getSmoothedAudio(type: 'volume' | 'bass' | 'mid' | 'treble', smoothing: number = 0.1): number {
-        const current = {
-            volume: this.audioLevel,
-            bass: this.bassLevel,
-            mid: this.midLevel,
-            treble: this.trebleLevel
-        }[type]
-
-        // Simple smoothing
-        return current * smoothing + (current * (1 - smoothing))
+    // Easing functions for smooth transitions
+    private easeInCubic(x: number): number {
+        return x * x * x;
     }
 
-    /**
-     * Create common particle system
-     */
-    protected createParticleSystem(count: number, material: THREE.Material): THREE.Points {
-        const geometry = new THREE.BufferGeometry()
-        const positions = new Float32Array(count * 3)
-
-        for (let i = 0; i < count * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 20
-            positions[i + 1] = (Math.random() - 0.5) * 20
-            positions[i + 2] = (Math.random() - 0.5) * 20
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-
-        const particles = new THREE.Points(geometry, material)
-        this.particles.push(particles)
-        this.group.add(particles)
-
-        return particles
+    private easeOutCubic(x: number): number {
+        return 1 - Math.pow(1 - x, 3);
     }
 
-    // Getters for state
-    public getScene(): THREE.Scene { return this.scene }
-    public getCamera(): THREE.Camera { return this.camera }
-    public get actNum(): number { return this.actNumber }
-    public get active(): boolean { return this.isActive }
-    public get initialized(): boolean { return this.isInitialized }
+    private easeInOutCubic(x: number): number {
+        return x < 0.5
+            ? 4 * x * x * x
+            : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    }
+
+    // Method to smoothly update visual intensity
+    protected updateVisualIntensity(current: number, target: number, smoothing: number = 0.1): number {
+        return current + (target - current) * smoothing;
+    }
 }

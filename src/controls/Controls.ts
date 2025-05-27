@@ -41,29 +41,54 @@ export class Controls {
 
     // Event handlers as bound methods
     private handleKeyDown = (event: KeyboardEvent): void => {
+        // Ignore key events while typing in input fields
+        if (event.target instanceof HTMLInputElement) return;
+
         switch (event.key.toLowerCase()) {
             case ' ':
             case 'p':
+                event.preventDefault();
                 this.app.toggleAutoPlay();
                 break;
             case 'arrowright':
             case 'n':
+            case 'd':
+                event.preventDefault();
                 this.app.nextAct();
                 break;
             case 'arrowleft':
             case 'b':
+            case 'a':
+                event.preventDefault();
                 this.app.previousAct();
                 break;
             case 'f':
+                event.preventDefault();
                 this.app.toggleFullscreen();
                 break;
             case 'm':
+                event.preventDefault();
                 const analyzer = this.app.getAudioAnalyzer();
                 if (analyzer) {
                     analyzer.toggleMicrophone();
                 }
                 break;
+            case 'escape':
+                this.hideTimingConfig();
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+                const actNumber = parseInt(event.key);
+                event.preventDefault();
+                this.app.setAct(actNumber);
+                break;
         }
+    }
+
+    private handleKeyUp = (event: KeyboardEvent): void => {
+        // Handle key up events if needed
     }
 
     private handleResize = (): void => {
@@ -107,7 +132,12 @@ export class Controls {
         this.updateMicrophoneStatus('disconnected');
         this.isInitialized = true;
 
-        console.log('🎮 Controls initialized');
+        // Add keyboard event listeners
+        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUp);
+        window.addEventListener('resize', this.handleResize);
+
+        console.log('🎮 Controls initialized with keyboard navigation');
     }
 
     private setupPlayButton(): void {

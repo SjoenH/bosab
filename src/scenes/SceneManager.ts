@@ -83,8 +83,8 @@ export class SceneManager implements SceneManagerInterface {
             beat: false,
             init: async () => false,
             requestMicrophone: async () => false,
-            toggleMicrophone: async () => {},
-            update: () => {},
+            toggleMicrophone: async () => { },
+            update: () => { },
             getAudioData: () => ({
                 frequencyData: new Uint8Array(0),
                 volume: 0,
@@ -101,7 +101,7 @@ export class SceneManager implements SceneManagerInterface {
             getBeat: () => false,
             getVolumeNormalized: () => 0,
             getFrequencyNormalized: () => 0,
-            dispose: () => {}
+            dispose: () => { }
         }
     }
 
@@ -180,42 +180,50 @@ export class SceneManager implements SceneManagerInterface {
 
     private transitionToAct(actNumber: number): void {
         if (actNumber === this.currentAct || this.isTransitioning) {
-            return
+            return;
         }
 
-        const newAct = this.acts[actNumber]
+        const newAct = this.acts[actNumber];
         if (!newAct) {
-            console.warn(`Act ${actNumber} not found`)
-            return
+            console.warn(`Act ${actNumber} not found`);
+            return;
         }
 
         // Use demo transition duration if in demo mode
-        const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
+        const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration;
 
-        // Start camera-based transition
-        this.isTransitioning = true
-        this.transitionStartTime = performance.now()
-        this.transitionProgress = 0
-        this.transitionPhase = 'preparing'
+        // Start transition
+        this.isTransitioning = true;
+        this.transitionStartTime = performance.now();
+        this.transitionProgress = 0;
+        this.transitionPhase = 'preparing';
 
         // Store transition state
-        this.previousAct = this.currentActInstance
-        this.nextAct = newAct
+        this.previousAct = this.currentActInstance;
+        this.nextAct = newAct;
 
         // Prepare next act for entry
         if (this.nextAct) {
-            this.nextAct.prepareEntry?.()
+            this.nextAct.prepareEntry?.();
         }
 
-        // Start camera transition
+        // Start camera transition with easing
         if (this.cameraController.transitionToAct(actNumber, duration)) {
-            this.transitionPhase = 'camera-moving'
+            this.transitionPhase = 'camera-moving';
+
+            // Keep both acts visible during transition
+            if (this.previousAct) {
+                this.previousAct.update(this.audioAnalyzer.getAudioData(), 16.67); // Update at 60fps timing
+            }
+            if (this.nextAct) {
+                this.nextAct.update(this.audioAnalyzer.getAudioData(), 16.67);
+            }
+
+            console.log(`🔄 Transitioning from Act ${this.currentAct} to Act ${actNumber} via camera movement${this.demoMode ? ' (DEMO)' : ''}`);
         } else {
             // Fallback if camera transition fails
-            this.completeActTransition()
+            this.completeActTransition();
         }
-
-        console.log(`🔄 Transitioning from Act ${this.currentAct} to Act ${actNumber} via camera movement${this.demoMode ? ' (DEMO)' : ''}`)
     }
 
     public update(audioData: AudioData, deltaTime: number): void {
