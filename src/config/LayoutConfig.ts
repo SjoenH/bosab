@@ -126,8 +126,8 @@ export const LAYOUT_CONFIG: LayoutConfigType = {
         3: {
             name: 'Human',
             position: new THREE.Vector3(0, 0, 50),         // South
-            cameraPosition: new THREE.Vector3(0, 0, 35),   // Move camera towards act
-            cameraLookAt: new THREE.Vector3(0, 0, 50),     // Look South
+            cameraPosition: new THREE.Vector3(0, -8, 30),  // Lower camera position and pull back slightly
+            cameraLookAt: new THREE.Vector3(0, 5, 50),     // Look up at elevated heart position
             boundingBox: {
                 min: new THREE.Vector3(-25, -25, 40),
                 max: new THREE.Vector3(25, 25, 60)
