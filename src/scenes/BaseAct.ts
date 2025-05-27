@@ -421,11 +421,11 @@ export abstract class BaseAct implements BaseActInterface {
 	}
 
 	private easeOutCubic(x: number): number {
-		return 1 - Math.pow(1 - x, 3);
+		return 1 - (1 - x) ** 3;
 	}
 
 	private easeInOutCubic(x: number): number {
-		return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+		return x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
 	}
 
 	// Method to smoothly update visual intensity

@@ -45,13 +45,13 @@ export class CameraController {
 		linear: (t: number) => t,
 		easeInOut: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
 		easeInOutCubic: (t: number) =>
-			t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+			t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2,
 		easeInOutQuart: (t: number) =>
-			t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
+			t < 0.5 ? 8 * t * t * t * t : 1 - (-2 * t + 2) ** 4 / 2,
 		easeOutBack: (t: number) => {
 			const c1 = 1.70158;
 			const c3 = c1 + 1;
-			return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+			return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
 		},
 	};
 

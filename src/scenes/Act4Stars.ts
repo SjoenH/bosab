@@ -38,7 +38,7 @@ export class Act4Stars extends BaseAct {
 			// Spherical distribution for stars
 			const theta = Math.random() * Math.PI * 2;
 			const phi = Math.acos(Math.random() * 2 - 1);
-			const radius = Math.pow(Math.random(), 0.5) * 50; // Square root for more uniform distribution
+			const radius = Math.random() ** 0.5 * 50; // Square root for more uniform distribution
 
 			const x = radius * Math.sin(phi) * Math.cos(theta);
 			const y = radius * Math.sin(phi) * Math.sin(theta);
@@ -147,8 +147,8 @@ export class Act4Stars extends BaseAct {
 			.array as Float32Array;
 
 		// Get audio levels for subtle reactivity
-		const volume = Math.pow(this.getSmoothedAudio("volume", 0.3), 2); // Square for more subtlety
-		const bassLevel = Math.pow(this.getSmoothedAudio("bass", 0.2), 2);
+		const volume = this.getSmoothedAudio("volume", 0.3) ** 2; // Square for more subtlety
+		const bassLevel = this.getSmoothedAudio("bass", 0.2) ** 2;
 
 		// Update star positions with very gentle expansion
 		for (let i = 0; i < this.starCount; i++) {
@@ -212,9 +212,9 @@ export class Act4Stars extends BaseAct {
 
 	protected updateVisualEffects(deltaTime: number): void {
 		// Get audio levels for subtle visual effects
-		const midLevel = Math.pow(this.getSmoothedAudio("mid", 0.2), 2);
-		const trebleLevel = Math.pow(this.getSmoothedAudio("treble", 0.1), 2);
-		const bassLevel = Math.pow(this.getSmoothedAudio("bass", 0.3), 2);
+		const midLevel = this.getSmoothedAudio("mid", 0.2) ** 2;
+		const trebleLevel = this.getSmoothedAudio("treble", 0.1) ** 2;
+		const bassLevel = this.getSmoothedAudio("bass", 0.3) ** 2;
 
 		// Subtle star brightness variation
 		const starIntensity = 0.7 + trebleLevel * 0.3;

@@ -11,7 +11,7 @@
 		"preview": "vite preview",
 		"type-check": "tsc --noEmit",
 		"codecheck": "biome check",
-		"codefix": "biome check --fix"
+		"codefix": "biome check --fix --unsafe"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

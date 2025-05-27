@@ -29,8 +29,6 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 	public volumeHistory: number[] = [];
 	public historySize = 10;
 
-	constructor() {}
-
 	async init(): Promise<boolean> {
 		try {
 			// Create audio context

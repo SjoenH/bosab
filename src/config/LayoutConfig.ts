@@ -246,8 +246,8 @@ export class LayoutHelper {
 	 * Check if two acts would overlap visually
 	 */
 	static checkActOverlap(actNumber1: number, actNumber2: number): boolean {
-		const bounds1 = this.getActBounds(actNumber1);
-		const bounds2 = this.getActBounds(actNumber2);
+		const bounds1 = LayoutHelper.getActBounds(actNumber1);
+		const bounds2 = LayoutHelper.getActBounds(actNumber2);
 
 		if (!bounds1 || !bounds2) return false;
 
@@ -266,8 +266,8 @@ export class LayoutHelper {
 	 * Calculate distance between two acts
 	 */
 	static getActDistance(actNumber1: number, actNumber2: number): number {
-		const pos1 = this.getActPosition(actNumber1);
-		const pos2 = this.getActPosition(actNumber2);
+		const pos1 = LayoutHelper.getActPosition(actNumber1);
+		const pos2 = LayoutHelper.getActPosition(actNumber2);
 		return pos1.distanceTo(pos2);
 	}
 
@@ -284,13 +284,13 @@ export class LayoutHelper {
 		// Apply layout based on type
 		switch (layoutName) {
 			case "circular":
-				this.applyCircularLayout(layout as CircularLayoutConfig);
+				LayoutHelper.applyCircularLayout(layout as CircularLayoutConfig);
 				break;
 			case "grid":
-				this.applyGridLayout(layout as GridLayoutConfig);
+				LayoutHelper.applyGridLayout(layout as GridLayoutConfig);
 				break;
 			case "vertical":
-				this.applyVerticalLayout(layout as VerticalLayoutConfig);
+				LayoutHelper.applyVerticalLayout(layout as VerticalLayoutConfig);
 				break;
 		}
 
@@ -358,7 +358,7 @@ export class LayoutHelper {
 		// Check for overlapping acts
 		for (let i = 1; i <= 4; i++) {
 			for (let j = i + 1; j <= 4; j++) {
-				if (this.checkActOverlap(i, j)) {
+				if (LayoutHelper.checkActOverlap(i, j)) {
 					issues.push(`Acts ${i} and ${j} have overlapping bounding boxes`);
 				}
 			}
@@ -368,7 +368,7 @@ export class LayoutHelper {
 		const minDistance = LAYOUT_CONFIG.spacing.safeZone;
 		for (let i = 1; i <= 4; i++) {
 			for (let j = i + 1; j <= 4; j++) {
-				const distance = this.getActDistance(i, j);
+				const distance = LayoutHelper.getActDistance(i, j);
 				if (distance < minDistance) {
 					issues.push(
 						`Acts ${i} and ${j} are too close: ${distance.toFixed(1)} < ${minDistance}`,

@@ -66,24 +66,26 @@ export class Controls {
 				event.preventDefault();
 				this.app.toggleFullscreen();
 				break;
-			case "m":
+			case "m": {
 				event.preventDefault();
 				const analyzer = this.app.getAudioAnalyzer();
 				if (analyzer) {
 					analyzer.toggleMicrophone();
 				}
 				break;
+			}
 			case "escape":
 				this.hideTimingConfig();
 				break;
 			case "1":
 			case "2":
 			case "3":
-			case "4":
+			case "4": {
 				const actNumber = Number.parseInt(event.key);
 				event.preventDefault();
 				this.app.setAct(actNumber);
 				break;
+			}
 		}
 	};
 
@@ -405,7 +407,7 @@ export class Controls {
 		document.addEventListener("keydown", (event) => {
 			if (
 				event.code === "Escape" &&
-				!this.timingConfig!.classList.contains("hidden")
+				!this.timingConfig?.classList.contains("hidden")
 			) {
 				this.hideTimingConfig();
 			}
