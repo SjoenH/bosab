@@ -1,442 +1,444 @@
 /* Reset and full-screen setup */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
-html, body {
-  height: 100%;
-  overflow: hidden;
-  background: #000;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #fff;
+html,
+body {
+	height: 100%;
+	overflow: hidden;
+	background: #000;
+	font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+		sans-serif;
+	color: #fff;
 }
 
 /* Canvas styling for full-screen projection */
 #canvas {
-  display: block;
-  width: 100vw;
-  height: 100vh;
-  cursor: none; /* Hide cursor during performance */
+	display: block;
+	width: 100vw;
+	height: 100vh;
+	cursor: none; /* Hide cursor during performance */
 }
 
 /* Controls overlay */
 #controls {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
+	position: fixed;
+	top: 20px;
+	left: 20px;
+	z-index: 100;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	opacity: 0.8;
+	transition: opacity 0.3s ease;
 }
 
 #controls:hover {
-  opacity: 1;
+	opacity: 1;
 }
 
 #playButton {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	color: #fff;
+	padding: 10px 15px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background 0.3s ease;
 }
 
 #playButton:hover {
-  background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.2);
 }
 
 #playButton.playing {
-  background: rgba(255, 100, 100, 0.3);
+	background: rgba(255, 100, 100, 0.3);
 }
 
 #fullscreenButton {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	color: #fff;
+	padding: 10px 15px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background 0.3s ease;
 }
 
 #fullscreenButton:hover {
-  background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.2);
 }
 
 #fullscreenButton.active {
-  background: rgba(100, 200, 100, 0.3);
-  border-color: rgba(100, 255, 100, 0.5);
+	background: rgba(100, 200, 100, 0.3);
+	border-color: rgba(100, 255, 100, 0.5);
 }
 
 #configButton {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	color: #fff;
+	padding: 10px 15px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background 0.3s ease;
 }
 
 #configButton:hover {
-  background: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.2);
 }
 
 #actIndicator {
-  background: rgba(0, 0, 0, 0.7);
-  padding: 8px 12px;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: bold;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+	background: rgba(0, 0, 0, 0.7);
+	padding: 8px 12px;
+	border-radius: 5px;
+	font-size: 16px;
+	font-weight: bold;
+	text-align: center;
+	border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 #micStatus {
-  background: rgba(0, 0, 0, 0.7);
-  padding: 6px 10px;
-  border-radius: 5px;
-  font-size: 14px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 100px;
+	background: rgba(0, 0, 0, 0.7);
+	padding: 6px 10px;
+	border-radius: 5px;
+	font-size: 14px;
+	text-align: center;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	min-width: 100px;
 }
 
 #micStatus.connected {
-  background: rgba(0, 100, 0, 0.7);
-  border-color: rgba(0, 255, 0, 0.5);
+	background: rgba(0, 100, 0, 0.7);
+	border-color: rgba(0, 255, 0, 0.5);
 }
 
 #micStatus.silent {
-  background: rgba(100, 100, 0, 0.7);
-  border-color: rgba(255, 255, 0, 0.5);
+	background: rgba(100, 100, 0, 0.7);
+	border-color: rgba(255, 255, 0, 0.5);
 }
 
 #audioLevels {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 8px;
-  border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 120px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	background: rgba(0, 0, 0, 0.7);
+	padding: 8px;
+	border-radius: 5px;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	min-width: 120px;
 }
 
 .level-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
 }
 
 .level-label {
-  min-width: 30px;
-  font-weight: bold;
+	min-width: 30px;
+	font-weight: bold;
 }
 
 .level-fill {
-  flex: 1;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  position: relative;
-  overflow: hidden;
+	flex: 1;
+	height: 8px;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+	position: relative;
+	overflow: hidden;
 }
 
 .level-fill::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  background: linear-gradient(90deg, #00ff41, #ffff00, #ff4400);
-  border-radius: 4px;
-  width: var(--level, 0%);
-  transition: width 0.05s ease;
-  box-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 100%;
+	background: linear-gradient(90deg, #00ff41, #ffff00, #ff4400);
+	border-radius: 4px;
+	width: var(--level, 0%);
+	transition: width 0.05s ease;
+	box-shadow: 0 0 4px rgba(0, 255, 65, 0.5);
 }
 
 .level-fill-low::after {
-  background: linear-gradient(90deg, #ff6b6b, #ff8e53);
-  box-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
+	background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+	box-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
 }
 
 .level-fill-mid::after {
-  background: linear-gradient(90deg, #4ecdc4, #45b7d1);
-  box-shadow: 0 0 4px rgba(78, 205, 196, 0.5);
+	background: linear-gradient(90deg, #4ecdc4, #45b7d1);
+	box-shadow: 0 0 4px rgba(78, 205, 196, 0.5);
 }
 
 .level-fill-high::after {
-  background: linear-gradient(90deg, #96ceb4, #feca57);
-  box-shadow: 0 0 4px rgba(150, 206, 180, 0.5);
+	background: linear-gradient(90deg, #96ceb4, #feca57);
+	box-shadow: 0 0 4px rgba(150, 206, 180, 0.5);
 }
 
 .level-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transition: all 0.1s ease;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.3);
+	transition: all 0.1s ease;
 }
 
 .level-indicator.beat {
-  background: #ff4400;
-  box-shadow: 0 0 15px #ff4400, 0 0 30px rgba(255, 68, 0, 0.3);
-  transform: scale(1.5);
+	background: #ff4400;
+	box-shadow: 0 0 15px #ff4400, 0 0 30px rgba(255, 68, 0, 0.3);
+	transform: scale(1.5);
 }
 
 #instructions {
-  font-size: 12px;
-  opacity: 0.7;
-  max-width: 200px;
-  line-height: 1.4;
+	font-size: 12px;
+	opacity: 0.7;
+	max-width: 200px;
+	line-height: 1.4;
 }
 
 /* Poetry overlay for Act 3 */
 #poetryOverlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 50;
-  text-align: center;
-  font-family: 'Crimson Text', 'Times New Roman', serif;
-  font-size: 2.5rem;
-  font-weight: 400;
-  line-height: 1.4;
-  max-width: 80vw;
-  opacity: 0;
-  transition: opacity 2s ease-in-out;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.1);
-  letter-spacing: 0.02em;
-  color: #f8f8f8;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 50;
+	text-align: center;
+	font-family: "Crimson Text", "Times New Roman", serif;
+	font-size: 2.5rem;
+	font-weight: 400;
+	line-height: 1.4;
+	max-width: 80vw;
+	opacity: 0;
+	transition: opacity 2s ease-in-out;
+	text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 255, 255, 0.1);
+	letter-spacing: 0.02em;
+	color: #f8f8f8;
 }
 
 #poetryOverlay.visible {
-  opacity: 1;
+	opacity: 1;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  #controls {
-    top: 10px;
-    left: 10px;
-  }
-  
-  #poetryOverlay {
-    font-size: 2rem;
-    max-width: 90vw;
-    line-height: 1.3;
-  }
+	#controls {
+		top: 10px;
+		left: 10px;
+	}
+
+	#poetryOverlay {
+		font-size: 2rem;
+		max-width: 90vw;
+		line-height: 1.3;
+	}
 }
 
 @media (max-width: 480px) {
-  #poetryOverlay {
-    font-size: 1.6rem;
-    max-width: 95vw;
-  }
+	#poetryOverlay {
+		font-size: 1.6rem;
+		max-width: 95vw;
+	}
 }
 
 /* Hide controls in performance mode */
 .performance-mode #controls {
-  opacity: 0;
-  pointer-events: none;
+	opacity: 0;
+	pointer-events: none;
 }
 
 /* Loading indicator */
 .loading {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #fff;
-  font-size: 1.5rem;
-  z-index: 200;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: #fff;
+	font-size: 1.5rem;
+	z-index: 200;
 }
 
 /* Timing Configuration Panel */
 .config-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.9);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
-  transition: opacity 0.3s ease;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.9);
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 1;
+	transition: opacity 0.3s ease;
 }
 
 .config-panel.hidden {
-  opacity: 0;
-  pointer-events: none;
+	opacity: 0;
+	pointer-events: none;
 }
 
 .config-content {
-  background: rgba(20, 20, 20, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  padding: 30px;
-  max-width: 500px;
-  width: 90vw;
-  color: #fff;
-  font-family: 'Inter', sans-serif;
+	background: rgba(20, 20, 20, 0.95);
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	border-radius: 10px;
+	padding: 30px;
+	max-width: 500px;
+	width: 90vw;
+	color: #fff;
+	font-family: "Inter", sans-serif;
 }
 
 .config-content h3 {
-  margin: 0 0 20px 0;
-  text-align: center;
-  color: #fff;
-  font-size: 1.5rem;
-  font-weight: 500;
+	margin: 0 0 20px 0;
+	text-align: center;
+	color: #fff;
+	font-size: 1.5rem;
+	font-weight: 500;
 }
 
 .config-section {
-  margin-bottom: 25px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+	margin-bottom: 25px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .config-section h4 {
-  margin: 0 0 15px 0;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 500;
+	margin: 0 0 15px 0;
+	color: #fff;
+	font-size: 1.1rem;
+	font-weight: 500;
 }
 
 .config-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  gap: 15px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 15px;
+	gap: 15px;
 }
 
 .config-item:last-child {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .config-item label {
-  flex: 1;
-  font-size: 14px;
-  color: #ddd;
+	flex: 1;
+	font-size: 14px;
+	color: #ddd;
 }
 
 .config-item input {
-  width: 80px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 5px;
-  color: #fff;
-  font-size: 14px;
-  text-align: center;
+	width: 80px;
+	padding: 8px 10px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	border-radius: 5px;
+	color: #fff;
+	font-size: 14px;
+	text-align: center;
 }
 
 .config-item input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.15);
+	outline: none;
+	border-color: rgba(255, 255, 255, 0.6);
+	background: rgba(255, 255, 255, 0.15);
 }
 
 .duration-display {
-  font-size: 12px;
-  color: #aaa;
-  min-width: 60px;
-  text-align: right;
+	font-size: 12px;
+	color: #aaa;
+	min-width: 60px;
+	text-align: right;
 }
 
 .config-info {
-  background: rgba(0, 150, 255, 0.1);
-  border: 1px solid rgba(0, 150, 255, 0.3);
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 25px;
+	background: rgba(0, 150, 255, 0.1);
+	border: 1px solid rgba(0, 150, 255, 0.3);
+	border-radius: 8px;
+	padding: 15px;
+	margin-bottom: 25px;
 }
 
 .config-info p {
-  margin: 5px 0;
-  font-size: 14px;
-  color: #ccc;
+	margin: 5px 0;
+	font-size: 14px;
+	color: #ccc;
 }
 
 .config-info strong {
-  color: #fff;
+	color: #fff;
 }
 
 .config-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
+	display: flex;
+	gap: 15px;
+	justify-content: center;
 }
 
 .config-actions button {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+	padding: 12px 24px;
+	border: none;
+	border-radius: 5px;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.3s ease;
 }
 
 #resetTimingButton {
-  background: rgba(255, 100, 100, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 100, 100, 0.5);
+	background: rgba(255, 100, 100, 0.2);
+	color: #fff;
+	border: 1px solid rgba(255, 100, 100, 0.5);
 }
 
 #resetTimingButton:hover {
-  background: rgba(255, 100, 100, 0.3);
+	background: rgba(255, 100, 100, 0.3);
 }
 
 #closeConfigButton {
-  background: rgba(100, 200, 100, 0.2);
-  color: #fff;
-  border: 1px solid rgba(100, 200, 100, 0.5);
+	background: rgba(100, 200, 100, 0.2);
+	color: #fff;
+	border: 1px solid rgba(100, 200, 100, 0.5);
 }
 
 #closeConfigButton:hover {
-  background: rgba(100, 200, 100, 0.3);
+	background: rgba(100, 200, 100, 0.3);
 }
 
 @media (max-width: 600px) {
-  .config-content {
-    padding: 20px;
-  }
-  
-  .config-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .config-item input {
-    width: 100%;
-    text-align: left;
-  }
-  
-  .duration-display {
-    text-align: left;
-  }
-  
-  .config-actions {
-    flex-direction: column;
-  }
+	.config-content {
+		padding: 20px;
+	}
+
+	.config-item {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+	}
+
+	.config-item input {
+		width: 100%;
+		text-align: left;
+	}
+
+	.duration-display {
+		text-align: left;
+	}
+
+	.config-actions {
+		flex-direction: column;
+	}
 }

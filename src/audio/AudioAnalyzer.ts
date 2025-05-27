@@ -1,250 +1,270 @@
-import type { AudioAnalyzerInterface, AudioData } from '../types/index'
+import type { AudioAnalyzerInterface, AudioData } from "../types/index";
 
 export class AudioAnalyzer implements AudioAnalyzerInterface {
-    public audioContext: AudioContext | null = null
-    public microphone: MediaStreamAudioSourceNode | null = null
-    public analyser: AnalyserNode | null = null
-    public dataArray: Uint8Array | null = null
-    public bufferLength: number = 0
+	public audioContext: AudioContext | null = null;
+	public microphone: MediaStreamAudioSourceNode | null = null;
+	public analyser: AnalyserNode | null = null;
+	public dataArray: Uint8Array | null = null;
+	public bufferLength = 0;
 
-    public isEnabled: boolean = false
-    public isMicrophoneConnected: boolean = false
+	public isEnabled = false;
+	public isMicrophoneConnected = false;
 
-    // Audio data
-    public volume: number = 0
-    public averageFrequency: number = 0
-    public lowFreq: number = 0
-    public midFreq: number = 0
-    public highFreq: number = 0
-    public beat: boolean = false
+	// Audio data
+	public volume = 0;
+	public averageFrequency = 0;
+	public lowFreq = 0;
+	public midFreq = 0;
+	public highFreq = 0;
+	public beat = false;
 
-    // Beat detection
-    public beatThreshold: number = 0.3
-    public beatCooldown: number = 0
-    public lastBeatTime: number = 0
-    public beatHistory: number[] = []
+	// Beat detection
+	public beatThreshold = 0.3;
+	public beatCooldown = 0;
+	public lastBeatTime = 0;
+	public beatHistory: number[] = [];
 
-    // Smoothing
-    public smoothingFactor: number = 0.8
-    public volumeHistory: number[] = []
-    public historySize: number = 10
+	// Smoothing
+	public smoothingFactor = 0.8;
+	public volumeHistory: number[] = [];
+	public historySize = 10;
 
-    constructor() { }
+	constructor() {}
 
-    async init(): Promise<boolean> {
-        try {
-            // Create audio context
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+	async init(): Promise<boolean> {
+		try {
+			// Create audio context
+			this.audioContext = new (
+				window.AudioContext || (window as any).webkitAudioContext
+			)();
 
-            // Setup analyser
-            this.analyser = this.audioContext.createAnalyser()
-            this.analyser.fftSize = 512
-            this.analyser.smoothingTimeConstant = 0.8
-            this.bufferLength = this.analyser.frequencyBinCount
-            this.dataArray = new Uint8Array(this.bufferLength)
+			// Setup analyser
+			this.analyser = this.audioContext.createAnalyser();
+			this.analyser.fftSize = 512;
+			this.analyser.smoothingTimeConstant = 0.8;
+			this.bufferLength = this.analyser.frequencyBinCount;
+			this.dataArray = new Uint8Array(this.bufferLength);
 
-            console.log('🎤 Audio analyzer initialized')
-            return true
-        } catch (error) {
-            console.warn('Audio initialization failed:', error)
-            return false
-        }
-    }
+			console.log("🎤 Audio analyzer initialized");
+			return true;
+		} catch (error) {
+			console.warn("Audio initialization failed:", error);
+			return false;
+		}
+	}
 
-    async requestMicrophone(): Promise<boolean> {
-        if (this.isMicrophoneConnected) {
-            return true
-        }
+	async requestMicrophone(): Promise<boolean> {
+		if (this.isMicrophoneConnected) {
+			return true;
+		}
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false
-                }
-            })
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					echoCancellation: false,
+					noiseSuppression: false,
+					autoGainControl: false,
+				},
+			});
 
-            if (!this.audioContext || !this.analyser) {
-                throw new Error('Audio context not initialized')
-            }
+			if (!this.audioContext || !this.analyser) {
+				throw new Error("Audio context not initialized");
+			}
 
-            this.microphone = this.audioContext.createMediaStreamSource(stream)
-            this.microphone.connect(this.analyser)
+			this.microphone = this.audioContext.createMediaStreamSource(stream);
+			this.microphone.connect(this.analyser);
 
-            this.isMicrophoneConnected = true
-            this.isEnabled = true
+			this.isMicrophoneConnected = true;
+			this.isEnabled = true;
 
-            console.log('🎤 Microphone connected')
-            return true
-        } catch (error) {
-            console.warn('Microphone access denied:', error)
-            this.startSilentMode()
-            return false
-        }
-    }
+			console.log("🎤 Microphone connected");
+			return true;
+		} catch (error) {
+			console.warn("Microphone access denied:", error);
+			this.startSilentMode();
+			return false;
+		}
+	}
 
-    startSilentMode(): void {
-        if (!this.audioContext || !this.analyser) {
-            return
-        }
+	startSilentMode(): void {
+		if (!this.audioContext || !this.analyser) {
+			return;
+		}
 
-        // Create a silent oscillator for demo purposes
-        const oscillator = this.audioContext.createOscillator()
-        const gainNode = this.audioContext.createGain()
+		// Create a silent oscillator for demo purposes
+		const oscillator = this.audioContext.createOscillator();
+		const gainNode = this.audioContext.createGain();
 
-        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime)
-        oscillator.connect(gainNode)
-        gainNode.connect(this.analyser)
+		gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+		oscillator.connect(gainNode);
+		gainNode.connect(this.analyser);
 
-        oscillator.start()
-        this.isEnabled = true
+		oscillator.start();
+		this.isEnabled = true;
 
-        console.log('🔇 Running in silent mode (no microphone)')
-    }
+		console.log("🔇 Running in silent mode (no microphone)");
+	}
 
-    async toggleMicrophone(): Promise<void> {
-        if (this.isMicrophoneConnected) {
-            this.isEnabled = !this.isEnabled
-            console.log(`🎤 Microphone ${this.isEnabled ? 'enabled' : 'disabled'}`)
-        } else {
-            await this.requestMicrophone()
-        }
-    }
+	async toggleMicrophone(): Promise<void> {
+		if (this.isMicrophoneConnected) {
+			this.isEnabled = !this.isEnabled;
+			console.log(`🎤 Microphone ${this.isEnabled ? "enabled" : "disabled"}`);
+		} else {
+			await this.requestMicrophone();
+		}
+	}
 
-    update(): void {
-        if (!this.isEnabled || !this.analyser || !this.dataArray) {
-            this.generateFallbackData()
-            return
-        }
+	update(): void {
+		if (!this.isEnabled || !this.analyser || !this.dataArray) {
+			this.generateFallbackData();
+			return;
+		}
 
-        // Get frequency data
-        this.analyser.getByteFrequencyData(this.dataArray)
+		// Get frequency data
+		this.analyser.getByteFrequencyData(this.dataArray);
 
-        // Calculate overall volume (RMS)
-        let sum = 0
-        for (let i = 0; i < this.bufferLength; i++) {
-            sum += this.dataArray[i] * this.dataArray[i]
-        }
-        const rawVolume = Math.sqrt(sum / this.bufferLength) / 255
+		// Calculate overall volume (RMS)
+		let sum = 0;
+		for (let i = 0; i < this.bufferLength; i++) {
+			sum += this.dataArray[i] * this.dataArray[i];
+		}
+		const rawVolume = Math.sqrt(sum / this.bufferLength) / 255;
 
-        // Smooth volume
-        this.volumeHistory.push(rawVolume)
-        if (this.volumeHistory.length > this.historySize) {
-            this.volumeHistory.shift()
-        }
-        this.volume = this.volumeHistory.reduce((a, b) => a + b, 0) / this.volumeHistory.length
+		// Smooth volume
+		this.volumeHistory.push(rawVolume);
+		if (this.volumeHistory.length > this.historySize) {
+			this.volumeHistory.shift();
+		}
+		this.volume =
+			this.volumeHistory.reduce((a, b) => a + b, 0) / this.volumeHistory.length;
 
-        // Calculate frequency bands
-        const lowEnd = Math.floor(this.bufferLength * 0.1)
-        const midEnd = Math.floor(this.bufferLength * 0.5)
+		// Calculate frequency bands
+		const lowEnd = Math.floor(this.bufferLength * 0.1);
+		const midEnd = Math.floor(this.bufferLength * 0.5);
 
-        this.lowFreq = this.getAverageFrequency(0, lowEnd)
-        this.midFreq = this.getAverageFrequency(lowEnd, midEnd)
-        this.highFreq = this.getAverageFrequency(midEnd, this.bufferLength)
+		this.lowFreq = this.getAverageFrequency(0, lowEnd);
+		this.midFreq = this.getAverageFrequency(lowEnd, midEnd);
+		this.highFreq = this.getAverageFrequency(midEnd, this.bufferLength);
 
-        this.averageFrequency = (this.lowFreq + this.midFreq + this.highFreq) / 3
+		this.averageFrequency = (this.lowFreq + this.midFreq + this.highFreq) / 3;
 
-        // Beat detection
-        this.detectBeat()
-    }
+		// Beat detection
+		this.detectBeat();
+	}
 
-    getAverageFrequency(startIndex: number, endIndex: number): number {
-        if (!this.dataArray) return 0
+	getAverageFrequency(startIndex: number, endIndex: number): number {
+		if (!this.dataArray) return 0;
 
-        let sum = 0
-        const count = endIndex - startIndex
+		let sum = 0;
+		const count = endIndex - startIndex;
 
-        for (let i = startIndex; i < endIndex; i++) {
-            sum += this.dataArray[i]
-        }
+		for (let i = startIndex; i < endIndex; i++) {
+			sum += this.dataArray[i];
+		}
 
-        return (sum / count) / 255
-    }
+		return sum / count / 255;
+	}
 
-    detectBeat(): void {
-        const currentTime = Date.now()
+	detectBeat(): void {
+		const currentTime = Date.now();
 
-        // Cooldown period
-        if (currentTime - this.lastBeatTime < 100) {
-            this.beat = false
-            return
-        }
+		// Cooldown period
+		if (currentTime - this.lastBeatTime < 100) {
+			this.beat = false;
+			return;
+		}
 
-        // Simple beat detection based on volume spike
-        const volumeSpike = this.volume > this.beatThreshold
-        const lowFreqSpike = this.lowFreq > this.beatThreshold * 1.2
+		// Simple beat detection based on volume spike
+		const volumeSpike = this.volume > this.beatThreshold;
+		const lowFreqSpike = this.lowFreq > this.beatThreshold * 1.2;
 
-        if (volumeSpike && lowFreqSpike) {
-            this.beat = true
-            this.lastBeatTime = currentTime
-            this.beatHistory.push(currentTime)
+		if (volumeSpike && lowFreqSpike) {
+			this.beat = true;
+			this.lastBeatTime = currentTime;
+			this.beatHistory.push(currentTime);
 
-            // Keep only recent beats
-            this.beatHistory = this.beatHistory.filter(time => currentTime - time < 2000)
-        } else {
-            this.beat = false
-        }
-    }
+			// Keep only recent beats
+			this.beatHistory = this.beatHistory.filter(
+				(time) => currentTime - time < 2000,
+			);
+		} else {
+			this.beat = false;
+		}
+	}
 
-    generateFallbackData(): void {
-        // Generate subtle ambient data for when no microphone is available
-        const time = Date.now() * 0.001
+	generateFallbackData(): void {
+		// Generate subtle ambient data for when no microphone is available
+		const time = Date.now() * 0.001;
 
-        this.volume = 0.1 + Math.sin(time * 0.5) * 0.05
-        this.lowFreq = 0.2 + Math.sin(time * 0.3) * 0.1
-        this.midFreq = 0.15 + Math.sin(time * 0.7) * 0.08
-        this.highFreq = 0.1 + Math.sin(time * 1.2) * 0.06
-        this.averageFrequency = (this.lowFreq + this.midFreq + this.highFreq) / 3
+		this.volume = 0.1 + Math.sin(time * 0.5) * 0.05;
+		this.lowFreq = 0.2 + Math.sin(time * 0.3) * 0.1;
+		this.midFreq = 0.15 + Math.sin(time * 0.7) * 0.08;
+		this.highFreq = 0.1 + Math.sin(time * 1.2) * 0.06;
+		this.averageFrequency = (this.lowFreq + this.midFreq + this.highFreq) / 3;
 
-        // Occasional "beats"
-        this.beat = Math.random() < 0.01
-    }
+		// Occasional "beats"
+		this.beat = Math.random() < 0.01;
+	}
 
-    getAudioData(): AudioData {
-        return {
-            frequencyData: this.dataArray || new Uint8Array(0),
-            volume: this.volume,
-            bass: this.lowFreq,
-            mid: this.midFreq,
-            treble: this.highFreq,
-            pitch: this.averageFrequency
-        }
-    }
+	getAudioData(): AudioData {
+		return {
+			frequencyData: this.dataArray || new Uint8Array(0),
+			volume: this.volume,
+			bass: this.lowFreq,
+			mid: this.midFreq,
+			treble: this.highFreq,
+			pitch: this.averageFrequency,
+		};
+	}
 
-    // Getters for easy access
-    getVolume(): number { return this.volume }
-    getLowFreq(): number { return this.lowFreq }
-    getMidFreq(): number { return this.midFreq }
-    getHighFreq(): number { return this.highFreq }
-    getBeat(): boolean { return this.beat }
+	// Getters for easy access
+	getVolume(): number {
+		return this.volume;
+	}
+	getLowFreq(): number {
+		return this.lowFreq;
+	}
+	getMidFreq(): number {
+		return this.midFreq;
+	}
+	getHighFreq(): number {
+		return this.highFreq;
+	}
+	getBeat(): boolean {
+		return this.beat;
+	}
 
-    // Get normalized values for visual effects
-    getVolumeNormalized(min: number = 0, max: number = 1): number {
-        return min + this.volume * (max - min)
-    }
+	// Get normalized values for visual effects
+	getVolumeNormalized(min = 0, max = 1): number {
+		return min + this.volume * (max - min);
+	}
 
-    getFrequencyNormalized(type: string = 'average', min: number = 0, max: number = 1): number {
-        let freq = this.averageFrequency
-        switch (type) {
-            case 'low': freq = this.lowFreq; break
-            case 'mid': freq = this.midFreq; break
-            case 'high': freq = this.highFreq; break
-        }
-        return min + freq * (max - min)
-    }
+	getFrequencyNormalized(type = "average", min = 0, max = 1): number {
+		let freq = this.averageFrequency;
+		switch (type) {
+			case "low":
+				freq = this.lowFreq;
+				break;
+			case "mid":
+				freq = this.midFreq;
+				break;
+			case "high":
+				freq = this.highFreq;
+				break;
+		}
+		return min + freq * (max - min);
+	}
 
-    dispose(): void {
-        if (this.microphone) {
-            this.microphone.disconnect()
-            this.microphone = null
-        }
-        if (this.audioContext) {
-            this.audioContext.close()
-            this.audioContext = null
-        }
-        this.isEnabled = false
-        this.isMicrophoneConnected = false
-    }
+	dispose(): void {
+		if (this.microphone) {
+			this.microphone.disconnect();
+			this.microphone = null;
+		}
+		if (this.audioContext) {
+			this.audioContext.close();
+			this.audioContext = null;
+		}
+		this.isEnabled = false;
+		this.isMicrophoneConnected = false;
+	}
 }
-
