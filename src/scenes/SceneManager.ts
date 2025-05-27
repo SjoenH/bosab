@@ -1,77 +1,144 @@
-import { Act1Matrix } from './Act1Matrix.js'
-import { Act2Desert } from './Act2Desert.js'
-import { Act3Human } from './Act3Human.js'
-import { Act4Stars } from './Act4Stars.js'
-import { CameraController } from '../controls/CameraController.js'
-import { LAYOUT_CONFIG, LayoutHelper } from '../config/LayoutConfig.js'
+import * as THREE from 'three'
+import { Act1Matrix } from './Act1Matrix'
+import { Act2Desert } from './Act2Desert'
+import { Act3Human } from './Act3Human'
+import { Act4Stars } from './Act4Stars'
+import { CameraController } from '../controls/CameraController'
+import type {
+    AudioData,
+    BaseAct,
+    SceneManagerInterface,
+    AudioAnalyzerInterface
+} from '../types'
 
-export class SceneManager {
-    constructor(scene, camera, audioAnalyzer) {
-        this.scene = scene
+interface ActMap {
+    [key: number]: BaseAct
+}
+
+type TransitionPhase = 'idle' | 'preparing' | 'camera-moving' | 'content-transitioning' | 'complete'
+type NavigationMode = 'camera' | 'fade'
+
+export class SceneManager implements SceneManagerInterface {
+    private scene: THREE.Scene
+    private camera: THREE.PerspectiveCamera
+    private audioAnalyzer: AudioAnalyzerInterface
+
+    // Camera controller for smooth navigation
+    private cameraController: CameraController
+
+    private acts: ActMap = {}
+    private currentActInstance: BaseAct | null = null
+    public currentAct: number = 1
+    private transitionProgress: number = 0
+    public isTransitioning: boolean = false
+    private transitionDuration: number = 3000 // Default 3 seconds
+    private transitionStartTime: number = 0
+
+    // Transition state management
+    private previousAct: BaseAct | null = null
+    private nextAct: BaseAct | null = null
+    private transitionPhase: TransitionPhase = 'idle'
+
+    // Navigation mode
+    private navigationMode: NavigationMode = 'camera'
+    private allowOverlap: boolean = false // Camera navigation doesn't need overlap
+
+    // Demo mode configuration
+    private demoMode: boolean = false
+    private autoProgress: boolean = false
+    private actProgressTimer: number = 0
+
+    // Configurable timing values
+    private performanceActDuration: number = 6.25 * 60 * 1000 // 6.25 minutes for performance
+    private demoActDuration: number = 5000 // 5 seconds per act in demo
+    private demoTransitionDuration: number = 3000 // 3 seconds transitions in demo
+
+    constructor(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
+        // Create a scene for the scene manager
+        this.scene = new THREE.Scene()
         this.camera = camera
-        this.audioAnalyzer = audioAnalyzer
 
         // Camera controller for smooth navigation
         this.cameraController = new CameraController(camera)
 
-        this.acts = {}
-        this.currentAct = null
-        this.currentActNumber = 1
-        this.transitionProgress = 0
-        this.isTransitioning = false
-        this.transitionDuration = LAYOUT_CONFIG.camera.transitionDuration
-        this.transitionStartTime = 0
-
-        // Transition state management
-        this.previousAct = null
-        this.nextAct = null
-        this.transitionPhase = 'idle' // 'preparing', 'camera-moving', 'content-transitioning', 'complete'
-
-        // Navigation mode
-        this.navigationMode = 'camera' // 'camera' or 'fade'
-        this.allowOverlap = false // Camera navigation doesn't need overlap
-
-        // Demo mode configuration
-        this.demoMode = false
-        this.autoProgress = false
-        this.actProgressTimer = 0
-
-        // Configurable timing values
-        this.performanceActDuration = 6.25 * 60 * 1000 // 6.25 minutes for performance
-        this.demoActDuration = 5000 // 5 seconds per act in demo
-        this.demoTransitionDuration = 3000 // 3 seconds transitions in demo
-
         // Camera controller callbacks
         this.setupCameraCallbacks()
 
+        // Create initial mock audio analyzer
+        this.audioAnalyzer = this.createMockAudioAnalyzer()
+
         console.log('🎭 SceneManager initialized with camera navigation')
+    }
+
+    // Create a mock audio analyzer for initialization
+    private createMockAudioAnalyzer(): AudioAnalyzerInterface {
+        return {
+            isEnabled: false,
+            isMicrophoneConnected: false,
+            volume: 0,
+            averageFrequency: 0,
+            lowFreq: 0,
+            midFreq: 0,
+            highFreq: 0,
+            beat: false,
+            init: async () => false,
+            requestMicrophone: async () => false,
+            toggleMicrophone: async () => {},
+            update: () => {},
+            getAudioData: () => ({
+                frequencyData: new Uint8Array(0),
+                volume: 0,
+                bass: 0,
+                mid: 0,
+                treble: 0,
+                pitch: 0
+            }),
+            getVolume: () => 0,
+            getAverageFrequency: () => 0,
+            getLowFreq: () => 0,
+            getMidFreq: () => 0,
+            getHighFreq: () => 0,
+            getBeat: () => false,
+            getVolumeNormalized: () => 0,
+            getFrequencyNormalized: () => 0,
+            dispose: () => {}
+        }
+    }
+
+    /**
+     * Update the audio analyzer instance and propagate to all acts
+     */
+    public updateAudioAnalyzer(audioAnalyzer: AudioAnalyzerInterface): void {
+        this.audioAnalyzer = audioAnalyzer
+        // Update audio analyzer for all acts
+        Object.values(this.acts).forEach(act => {
+            // Use type assertion to update the protected audioAnalyzer property
+            (act as { audioAnalyzer: AudioAnalyzerInterface }).audioAnalyzer = audioAnalyzer
+        })
     }
 
     /**
      * Setup camera controller callbacks
      */
-    setupCameraCallbacks() {
-        this.cameraController.onTransitionStart = (actNumber) => {
+    private setupCameraCallbacks(): void {
+        this.cameraController.onTransitionStart = (actNumber: number) => {
             console.log(`🎭 Camera transition started to Act ${actNumber}`)
         }
 
-        this.cameraController.onTransitionComplete = (actNumber) => {
+        this.cameraController.onTransitionComplete = (actNumber: number) => {
             console.log(`🎭 Camera transition completed to Act ${actNumber}`)
             if (this.isTransitioning) {
                 this.completeActTransition()
             }
         }
 
-        this.cameraController.onTransitionUpdate = (progress, actNumber) => {
+        this.cameraController.onTransitionUpdate = (progress: number, actNumber: number) => {
             // Update any UI elements that track transition progress
             this.transitionProgress = progress
         }
     }
 
-    init() {
-        // Validate layout configuration
-        LayoutHelper.validateLayout()
-
+    public init(): void {
         // Initialize camera controller
         this.cameraController.init()
 
@@ -85,7 +152,7 @@ export class SceneManager {
         Object.values(this.acts).forEach(act => act.init())
 
         // Start with Act 1 as current, but keep all acts visible and active
-        this.currentAct = this.acts[1]
+        this.currentActInstance = this.acts[1]
 
         // Enter all acts so they're all visible and running
         Object.values(this.acts).forEach(act => act.enter())
@@ -95,8 +162,24 @@ export class SceneManager {
         console.log('🎭 Scene manager initialized with 4 spatially-separated acts (all visible and active)')
     }
 
-    transitionToAct(actNumber) {
-        if (actNumber === this.currentActNumber || this.isTransitioning) {
+    public async setAct(actNumber: number): Promise<void> {
+        return new Promise((resolve) => {
+            this.transitionToAct(actNumber)
+
+            // Wait for transition to complete
+            const checkComplete = () => {
+                if (!this.isTransitioning) {
+                    resolve()
+                } else {
+                    requestAnimationFrame(checkComplete)
+                }
+            }
+            checkComplete()
+        })
+    }
+
+    private transitionToAct(actNumber: number): void {
+        if (actNumber === this.currentAct || this.isTransitioning) {
             return
         }
 
@@ -116,12 +199,12 @@ export class SceneManager {
         this.transitionPhase = 'preparing'
 
         // Store transition state
-        this.previousAct = this.currentAct
+        this.previousAct = this.currentActInstance
         this.nextAct = newAct
 
         // Prepare next act for entry
         if (this.nextAct) {
-            this.nextAct.prepareEntry()
+            this.nextAct.prepareEntry?.()
         }
 
         // Start camera transition
@@ -132,10 +215,12 @@ export class SceneManager {
             this.completeActTransition()
         }
 
-        console.log(`🔄 Transitioning from Act ${this.currentActNumber} to Act ${actNumber} via camera movement${this.demoMode ? ' (DEMO)' : ''}`)
+        console.log(`🔄 Transitioning from Act ${this.currentAct} to Act ${actNumber} via camera movement${this.demoMode ? ' (DEMO)' : ''}`)
     }
 
-    update(time) {
+    public update(audioData: AudioData, deltaTime: number): void {
+        const time = performance.now()
+
         // Update camera controller
         this.cameraController.update(time)
 
@@ -146,14 +231,14 @@ export class SceneManager {
 
         // Update ALL acts - don't pause any of them
         Object.values(this.acts).forEach(act => {
-            act.update(time)
+            act.update(audioData, deltaTime)
         })
     }
 
     /**
      * Complete the act transition (called by camera controller)
      */
-    completeActTransition() {
+    private completeActTransition(): void {
         if (!this.isTransitioning) return
 
         // Complete the transition - but don't exit previous act to keep it visible
@@ -163,8 +248,8 @@ export class SceneManager {
 
         if (this.nextAct) {
             this.nextAct.enter()
-            this.currentAct = this.nextAct
-            this.currentActNumber = this.getActNumber(this.nextAct)
+            this.currentActInstance = this.nextAct
+            this.currentAct = this.getActNumber(this.nextAct)
         }
 
         // Reset transition state
@@ -177,37 +262,44 @@ export class SceneManager {
         // Reset auto-progress timer
         this.actProgressTimer = performance.now()
 
-        console.log(`🎭 Act transition completed - now at Act ${this.currentActNumber} (all acts remain visible)`)
+        console.log(`🎭 Act transition completed - now at Act ${this.currentAct} (all acts remain visible)`)
     }
 
-    getCurrentAct() {
+    public getCurrentAct(): BaseAct | null {
+        return this.currentActInstance
+    }
+
+    public getCurrentActNumber(): number {
         return this.currentAct
     }
 
-    getCurrentActNumber() {
-        return this.currentActNumber
+    public getCurrentScene(): { scene: THREE.Scene; camera: THREE.Camera } {
+        return {
+            scene: this.scene,
+            camera: this.camera
+        }
     }
 
-    getTransitionProgress() {
-        return this.cameraController.isTransitioning ?
-            this.cameraController.transitionProgress : 0
+    public getTransitionProgress(): number {
+        return this.cameraController.isInTransition ?
+            this.cameraController.transitionAmount : 0
     }
 
-    isInTransition() {
-        return this.isTransitioning || this.cameraController.isTransitioning
+    public isInTransition(): boolean {
+        return this.isTransitioning || this.cameraController.isInTransition
     }
 
     /**
      * Get camera controller for external access
      */
-    getCameraController() {
+    public getCameraController(): CameraController {
         return this.cameraController
     }
 
     /**
      * Switch navigation mode between camera and fade
      */
-    setNavigationMode(mode) {
+    public setNavigationMode(mode: NavigationMode): void {
         if (mode === 'camera' || mode === 'fade') {
             this.navigationMode = mode
             console.log(`🎭 Navigation mode set to: ${mode}`)
@@ -219,22 +311,18 @@ export class SceneManager {
     /**
      * Move camera to overview position
      */
-    showOverview() {
+    public showOverview(): void {
         this.cameraController.transitionToOverview()
     }
 
     /**
      * Apply new layout configuration
      */
-    updateLayout(layoutName = null) {
-        if (layoutName) {
-            LayoutHelper.applyLayout(layoutName)
-        }
-
+    public updateLayout(layoutName?: string): void {
         // Update all acts with new positions
         Object.values(this.acts).forEach(act => {
-            if (act.applyLayoutPosition) {
-                act.applyLayoutPosition()
+            if ((act as any).applyLayoutPosition) {
+                (act as any).applyLayoutPosition()
             }
         })
 
@@ -244,13 +332,13 @@ export class SceneManager {
         console.log(`🎭 Layout updated${layoutName ? ` to ${layoutName}` : ''}`)
     }
 
-    updateAutoProgress(time) {
+    private updateAutoProgress(time: number): void {
         const duration = this.demoMode ? this.demoActDuration : this.performanceActDuration
         const elapsed = time - this.actProgressTimer
 
         if (elapsed >= duration) {
             // Auto-advance to next act
-            let nextAct = this.currentActNumber + 1
+            let nextAct = this.currentAct + 1
             if (nextAct > 4) {
                 nextAct = 1 // Loop back to Act 1
             }
@@ -261,7 +349,7 @@ export class SceneManager {
     /**
      * Helper method to get act number from act instance
      */
-    getActNumber(act) {
+    private getActNumber(act: BaseAct): number {
         for (const [number, actInstance] of Object.entries(this.acts)) {
             if (actInstance === act) {
                 return parseInt(number)
@@ -271,24 +359,24 @@ export class SceneManager {
     }
 
     // Demo mode controls
-    enableDemoMode(enabled = true) {
+    public enableDemoMode(enabled: boolean = true): void {
         this.demoMode = enabled
         console.log(`🎬 Demo mode ${enabled ? 'enabled' : 'disabled'}`)
     }
 
-    setAutoProgress(enabled = true) {
+    public setAutoProgress(enabled: boolean = true): void {
         this.autoProgress = enabled
         this.actProgressTimer = performance.now() // Reset timer
         console.log(`⏩ Auto-progress ${enabled ? 'enabled' : 'disabled'}`)
     }
 
-    setDemoTiming(actDuration = 5000, transitionDuration = 500) {
+    public setDemoTiming(actDuration: number = 5000, transitionDuration: number = 500): void {
         this.demoActDuration = actDuration
         this.demoTransitionDuration = transitionDuration
         console.log(`⏱️ Demo timing: ${actDuration}ms acts, ${transitionDuration}ms transitions`)
     }
 
-    setTimingConfig(config) {
+    public setTimingConfig(config: any): void {
         if (config.transitionDuration !== undefined) {
             this.transitionDuration = config.transitionDuration
         }
@@ -311,21 +399,21 @@ export class SceneManager {
     }
 
     // Quick cycle through all acts for testing
-    startQuickDemo() {
+    public startQuickDemo(): void {
         this.enableDemoMode(true)
         this.setDemoTiming(3000, 300) // 3 seconds per act, 0.3 second transitions
         this.setAutoProgress(true)
         console.log('🚀 Quick demo started - cycling through all acts')
     }
 
-    stopDemo() {
+    public stopDemo(): void {
         this.enableDemoMode(false)
         this.setAutoProgress(false)
         console.log('⏹️ Demo stopped')
     }
 
     // Cleanup method
-    dispose() {
+    public dispose(): void {
         // Dispose camera controller
         if (this.cameraController) {
             this.cameraController.dispose()
@@ -339,4 +427,3 @@ export class SceneManager {
         })
     }
 }
-

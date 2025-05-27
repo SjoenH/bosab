@@ -5,9 +5,69 @@
  * making it easy to adjust spacing and positioning without touching act code.
  */
 
-import * as THREE from 'three'
+import * as THREE from 'three';
 
-export const LAYOUT_CONFIG = {
+interface BoundingBox {
+    min: THREE.Vector3;
+    max: THREE.Vector3;
+}
+
+interface ActConfig {
+    name: string;
+    position: THREE.Vector3;
+    cameraPosition: THREE.Vector3;
+    cameraLookAt: THREE.Vector3;
+    boundingBox: BoundingBox;
+}
+
+interface CircularLayoutConfig {
+    radius: number;
+    acts: Record<number, { angle: number }>;
+}
+
+interface GridLayoutConfig {
+    spacing: number;
+    acts: Record<number, { row: number; col: number }>;
+}
+
+interface VerticalLayoutConfig {
+    spacing: number;
+    acts: Record<number, { y: number }>;
+}
+
+interface AlternativeLayouts {
+    circular: CircularLayoutConfig;
+    grid: GridLayoutConfig;
+    vertical: VerticalLayoutConfig;
+}
+
+interface LayoutConfigType {
+    spacing: {
+        actSeparation: number;
+        safeZone: number;
+        verticalOffset: number;
+        cameraDistance: number;
+    };
+    camera: {
+        fov: number;
+        near: number;
+        far: number;
+        transitionDuration: number;
+        easing: string;
+        smoothLookAt: boolean;
+        lookAtTransitionDuration: number;
+    };
+    acts: Record<number, ActConfig>;
+    alternativeLayouts: AlternativeLayouts;
+    debug: {
+        showBoundingBoxes: boolean;
+        showCameraPath: boolean;
+        showActCenters: boolean;
+        wireframeMode: boolean;
+    };
+}
+
+export const LAYOUT_CONFIG: LayoutConfigType = {
     // Global spacing and positioning settings
     spacing: {
         // Distance between acts along primary axis
@@ -135,7 +195,7 @@ export const LAYOUT_CONFIG = {
         // Enable wireframe mode for easier positioning
         wireframeMode: false
     }
-}
+};
 
 /**
  * Helper functions for layout calculations
@@ -144,171 +204,174 @@ export class LayoutHelper {
     /**
      * Get the position for a specific act
      */
-    static getActPosition(actNumber) {
-        const actConfig = LAYOUT_CONFIG.acts[actNumber]
-        return actConfig ? actConfig.position.clone() : new THREE.Vector3(0, 0, 0)
+    static getActPosition(actNumber: number): THREE.Vector3 {
+        const actConfig = LAYOUT_CONFIG.acts[actNumber];
+        return actConfig ? actConfig.position.clone() : new THREE.Vector3(0, 0, 0);
     }
 
     /**
      * Get camera position for a specific act
      */
-    static getCameraPosition(actNumber) {
-        const actConfig = LAYOUT_CONFIG.acts[actNumber]
-        return actConfig ? actConfig.cameraPosition.clone() : new THREE.Vector3(0, 0, 15)
+    static getCameraPosition(actNumber: number): THREE.Vector3 {
+        const actConfig = LAYOUT_CONFIG.acts[actNumber];
+        return actConfig ? actConfig.cameraPosition.clone() : new THREE.Vector3(0, 0, 15);
     }
 
     /**
      * Get camera look-at target for a specific act
      */
-    static getCameraLookAt(actNumber) {
-        const actConfig = LAYOUT_CONFIG.acts[actNumber]
-        return actConfig ? actConfig.cameraLookAt.clone() : new THREE.Vector3(0, 0, 0)
+    static getCameraLookAt(actNumber: number): THREE.Vector3 {
+        const actConfig = LAYOUT_CONFIG.acts[actNumber];
+        return actConfig ? actConfig.cameraLookAt.clone() : new THREE.Vector3(0, 0, 0);
     }
 
     /**
      * Get bounding box for a specific act
      */
-    static getActBounds(actNumber) {
-        const actConfig = LAYOUT_CONFIG.acts[actNumber]
-        if (!actConfig) return null
+    static getActBounds(actNumber: number): BoundingBox | null {
+        const actConfig = LAYOUT_CONFIG.acts[actNumber];
+        if (!actConfig) return null;
 
         return {
             min: actConfig.boundingBox.min.clone(),
             max: actConfig.boundingBox.max.clone()
-        }
+        };
     }
 
     /**
      * Check if two acts would overlap visually
      */
-    static checkActOverlap(actNumber1, actNumber2) {
-        const bounds1 = this.getActBounds(actNumber1)
-        const bounds2 = this.getActBounds(actNumber2)
+    static checkActOverlap(actNumber1: number, actNumber2: number): boolean {
+        const bounds1 = this.getActBounds(actNumber1);
+        const bounds2 = this.getActBounds(actNumber2);
 
-        if (!bounds1 || !bounds2) return false
+        if (!bounds1 || !bounds2) return false;
 
         // Simple AABB overlap check
         return (bounds1.min.x <= bounds2.max.x && bounds1.max.x >= bounds2.min.x) &&
             (bounds1.min.y <= bounds2.max.y && bounds1.max.y >= bounds2.min.y) &&
-            (bounds1.min.z <= bounds2.max.z && bounds1.max.z >= bounds2.min.z)
+            (bounds1.min.z <= bounds2.max.z && bounds1.max.z >= bounds2.min.z);
     }
 
     /**
      * Calculate distance between two acts
      */
-    static getActDistance(actNumber1, actNumber2) {
-        const pos1 = this.getActPosition(actNumber1)
-        const pos2 = this.getActPosition(actNumber2)
-        return pos1.distanceTo(pos2)
+    static getActDistance(actNumber1: number, actNumber2: number): number {
+        const pos1 = this.getActPosition(actNumber1);
+        const pos2 = this.getActPosition(actNumber2);
+        return pos1.distanceTo(pos2);
     }
 
     /**
      * Apply alternative layout
      */
-    static applyLayout(layoutName) {
-        const layout = LAYOUT_CONFIG.alternativeLayouts[layoutName]
+    static applyLayout(layoutName: keyof AlternativeLayouts): boolean {
+        const layout = LAYOUT_CONFIG.alternativeLayouts[layoutName];
         if (!layout) {
-            console.warn(`Layout "${layoutName}" not found`)
-            return false
+            console.warn(`Layout "${layoutName}" not found`);
+            return false;
         }
 
         // Apply layout based on type
         switch (layoutName) {
             case 'circular':
-                this.applyCircularLayout(layout)
-                break
+                this.applyCircularLayout(layout as CircularLayoutConfig);
+                break;
             case 'grid':
-                this.applyGridLayout(layout)
-                break
+                this.applyGridLayout(layout as GridLayoutConfig);
+                break;
             case 'vertical':
-                this.applyVerticalLayout(layout)
-                break
+                this.applyVerticalLayout(layout as VerticalLayoutConfig);
+                break;
         }
 
-        console.log(`📐 Applied "${layoutName}" layout`)
-        return true
+        console.log(`📐 Applied "${layoutName}" layout`);
+        return true;
     }
 
-    static applyCircularLayout(layout) {
-        const { radius, acts } = layout
-        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance
+    private static applyCircularLayout(layout: CircularLayoutConfig): void {
+        const { radius, acts } = layout;
+        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
         Object.entries(acts).forEach(([actNumber, config]) => {
-            const { angle } = config
-            const x = Math.cos(angle) * radius
-            const z = Math.sin(angle) * radius
+            const { angle } = config;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const actNum = parseInt(actNumber);
 
             // Update act position
-            LAYOUT_CONFIG.acts[actNumber].position.set(x, 0, z)
-            LAYOUT_CONFIG.acts[actNumber].cameraPosition.set(
+            LAYOUT_CONFIG.acts[actNum].position.set(x, 0, z);
+            LAYOUT_CONFIG.acts[actNum].cameraPosition.set(
                 x + Math.cos(angle) * cameraDistance,
                 0,
                 z + Math.sin(angle) * cameraDistance
-            )
-            LAYOUT_CONFIG.acts[actNumber].cameraLookAt.set(x, 0, z)
-        })
+            );
+            LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(x, 0, z);
+        });
     }
 
-    static applyGridLayout(layout) {
-        const { spacing, acts } = layout
-        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance
+    private static applyGridLayout(layout: GridLayoutConfig): void {
+        const { spacing, acts } = layout;
+        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
         Object.entries(acts).forEach(([actNumber, config]) => {
-            const { row, col } = config
-            const x = (col - 0.5) * spacing
-            const y = -(row - 0.5) * spacing
+            const { row, col } = config;
+            const x = (col - 0.5) * spacing;
+            const y = -(row - 0.5) * spacing;
+            const actNum = parseInt(actNumber);
 
-            LAYOUT_CONFIG.acts[actNumber].position.set(x, y, 0)
-            LAYOUT_CONFIG.acts[actNumber].cameraPosition.set(x, y, cameraDistance)
-            LAYOUT_CONFIG.acts[actNumber].cameraLookAt.set(x, y, 0)
-        })
+            LAYOUT_CONFIG.acts[actNum].position.set(x, y, 0);
+            LAYOUT_CONFIG.acts[actNum].cameraPosition.set(x, y, cameraDistance);
+            LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(x, y, 0);
+        });
     }
 
-    static applyVerticalLayout(layout) {
-        const { spacing, acts } = layout
-        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance
+    private static applyVerticalLayout(layout: VerticalLayoutConfig): void {
+        const { spacing, acts } = layout;
+        const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
         Object.entries(acts).forEach(([actNumber, config]) => {
-            const { y } = config
+            const { y } = config;
+            const actNum = parseInt(actNumber);
 
-            LAYOUT_CONFIG.acts[actNumber].position.set(0, y, 0)
-            LAYOUT_CONFIG.acts[actNumber].cameraPosition.set(0, y, cameraDistance)
-            LAYOUT_CONFIG.acts[actNumber].cameraLookAt.set(0, y, 0)
-        })
+            LAYOUT_CONFIG.acts[actNum].position.set(0, y, 0);
+            LAYOUT_CONFIG.acts[actNum].cameraPosition.set(0, y, cameraDistance);
+            LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(0, y, 0);
+        });
     }
 
     /**
      * Validate layout configuration
      */
-    static validateLayout() {
-        const issues = []
+    static validateLayout(): string[] {
+        const issues: string[] = [];
 
         // Check for overlapping acts
         for (let i = 1; i <= 4; i++) {
             for (let j = i + 1; j <= 4; j++) {
                 if (this.checkActOverlap(i, j)) {
-                    issues.push(`Acts ${i} and ${j} have overlapping bounding boxes`)
+                    issues.push(`Acts ${i} and ${j} have overlapping bounding boxes`);
                 }
             }
         }
 
         // Check minimum distances
-        const minDistance = LAYOUT_CONFIG.spacing.safeZone
+        const minDistance = LAYOUT_CONFIG.spacing.safeZone;
         for (let i = 1; i <= 4; i++) {
             for (let j = i + 1; j <= 4; j++) {
-                const distance = this.getActDistance(i, j)
+                const distance = this.getActDistance(i, j);
                 if (distance < minDistance) {
-                    issues.push(`Acts ${i} and ${j} are too close: ${distance.toFixed(1)} < ${minDistance}`)
+                    issues.push(`Acts ${i} and ${j} are too close: ${distance.toFixed(1)} < ${minDistance}`);
                 }
             }
         }
 
         if (issues.length > 0) {
-            console.warn('⚠️ Layout validation issues:', issues)
+            console.warn('⚠️ Layout validation issues:', issues);
         } else {
-            console.log('✅ Layout validation passed')
+            console.log('✅ Layout validation passed');
         }
 
-        return issues
+        return issues;
     }
 }

@@ -1,38 +1,40 @@
-export class AudioAnalyzer {
-    constructor() {
-        this.audioContext = null
-        this.microphone = null
-        this.analyser = null
-        this.dataArray = null
-        this.bufferLength = 0
+import type { AudioAnalyzerInterface, AudioData } from '../types/index'
 
-        this.isEnabled = false
-        this.isMicrophoneConnected = false
+export class AudioAnalyzer implements AudioAnalyzerInterface {
+    public audioContext: AudioContext | null = null
+    public microphone: MediaStreamAudioSourceNode | null = null
+    public analyser: AnalyserNode | null = null
+    public dataArray: Uint8Array | null = null
+    public bufferLength: number = 0
 
-        // Audio data
-        this.volume = 0
-        this.averageFrequency = 0
-        this.lowFreq = 0
-        this.midFreq = 0
-        this.highFreq = 0
-        this.beat = false
+    public isEnabled: boolean = false
+    public isMicrophoneConnected: boolean = false
 
-        // Beat detection
-        this.beatThreshold = 0.3
-        this.beatCooldown = 0
-        this.lastBeatTime = 0
-        this.beatHistory = []
+    // Audio data
+    public volume: number = 0
+    public averageFrequency: number = 0
+    public lowFreq: number = 0
+    public midFreq: number = 0
+    public highFreq: number = 0
+    public beat: boolean = false
 
-        // Smoothing
-        this.smoothingFactor = 0.8
-        this.volumeHistory = []
-        this.historySize = 10
-    }
+    // Beat detection
+    public beatThreshold: number = 0.3
+    public beatCooldown: number = 0
+    public lastBeatTime: number = 0
+    public beatHistory: number[] = []
 
-    async init() {
+    // Smoothing
+    public smoothingFactor: number = 0.8
+    public volumeHistory: number[] = []
+    public historySize: number = 10
+
+    constructor() { }
+
+    async init(): Promise<boolean> {
         try {
             // Create audio context
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
 
             // Setup analyser
             this.analyser = this.audioContext.createAnalyser()
@@ -49,7 +51,7 @@ export class AudioAnalyzer {
         }
     }
 
-    async requestMicrophone() {
+    async requestMicrophone(): Promise<boolean> {
         if (this.isMicrophoneConnected) {
             return true
         }
@@ -62,6 +64,10 @@ export class AudioAnalyzer {
                     autoGainControl: false
                 }
             })
+
+            if (!this.audioContext || !this.analyser) {
+                throw new Error('Audio context not initialized')
+            }
 
             this.microphone = this.audioContext.createMediaStreamSource(stream)
             this.microphone.connect(this.analyser)
@@ -78,7 +84,11 @@ export class AudioAnalyzer {
         }
     }
 
-    startSilentMode() {
+    startSilentMode(): void {
+        if (!this.audioContext || !this.analyser) {
+            return
+        }
+
         // Create a silent oscillator for demo purposes
         const oscillator = this.audioContext.createOscillator()
         const gainNode = this.audioContext.createGain()
@@ -93,7 +103,7 @@ export class AudioAnalyzer {
         console.log('🔇 Running in silent mode (no microphone)')
     }
 
-    async toggleMicrophone() {
+    async toggleMicrophone(): Promise<void> {
         if (this.isMicrophoneConnected) {
             this.isEnabled = !this.isEnabled
             console.log(`🎤 Microphone ${this.isEnabled ? 'enabled' : 'disabled'}`)
@@ -102,8 +112,8 @@ export class AudioAnalyzer {
         }
     }
 
-    update() {
-        if (!this.isEnabled || !this.analyser) {
+    update(): void {
+        if (!this.isEnabled || !this.analyser || !this.dataArray) {
             this.generateFallbackData()
             return
         }
@@ -139,7 +149,9 @@ export class AudioAnalyzer {
         this.detectBeat()
     }
 
-    getAverageFrequency(startIndex, endIndex) {
+    getAverageFrequency(startIndex: number, endIndex: number): number {
+        if (!this.dataArray) return 0
+
         let sum = 0
         const count = endIndex - startIndex
 
@@ -150,7 +162,7 @@ export class AudioAnalyzer {
         return (sum / count) / 255
     }
 
-    detectBeat() {
+    detectBeat(): void {
         const currentTime = Date.now()
 
         // Cooldown period
@@ -175,7 +187,7 @@ export class AudioAnalyzer {
         }
     }
 
-    generateFallbackData() {
+    generateFallbackData(): void {
         // Generate subtle ambient data for when no microphone is available
         const time = Date.now() * 0.001
 
@@ -189,20 +201,30 @@ export class AudioAnalyzer {
         this.beat = Math.random() < 0.01
     }
 
+    getAudioData(): AudioData {
+        return {
+            frequencyData: this.dataArray || new Uint8Array(0),
+            volume: this.volume,
+            bass: this.lowFreq,
+            mid: this.midFreq,
+            treble: this.highFreq,
+            pitch: this.averageFrequency
+        }
+    }
+
     // Getters for easy access
-    getVolume() { return this.volume }
-    getAverageFrequency() { return this.averageFrequency }
-    getLowFreq() { return this.lowFreq }
-    getMidFreq() { return this.midFreq }
-    getHighFreq() { return this.highFreq }
-    getBeat() { return this.beat }
+    getVolume(): number { return this.volume }
+    getLowFreq(): number { return this.lowFreq }
+    getMidFreq(): number { return this.midFreq }
+    getHighFreq(): number { return this.highFreq }
+    getBeat(): boolean { return this.beat }
 
     // Get normalized values for visual effects
-    getVolumeNormalized(min = 0, max = 1) {
+    getVolumeNormalized(min: number = 0, max: number = 1): number {
         return min + this.volume * (max - min)
     }
 
-    getFrequencyNormalized(type = 'average', min = 0, max = 1) {
+    getFrequencyNormalized(type: string = 'average', min: number = 0, max: number = 1): number {
         let freq = this.averageFrequency
         switch (type) {
             case 'low': freq = this.lowFreq; break
@@ -211,4 +233,18 @@ export class AudioAnalyzer {
         }
         return min + freq * (max - min)
     }
+
+    dispose(): void {
+        if (this.microphone) {
+            this.microphone.disconnect()
+            this.microphone = null
+        }
+        if (this.audioContext) {
+            this.audioContext.close()
+            this.audioContext = null
+        }
+        this.isEnabled = false
+        this.isMicrophoneConnected = false
+    }
 }
+
