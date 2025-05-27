@@ -25,30 +25,37 @@ export class Act3Human extends BaseAct {
 	private startupDelay = 3000; // Wait 3 seconds before starting heartbeat
 	private actStartTime = 0; // Track when the act started
 
+	private currentScale = 2;
+	private targetScale = 2;
+	private scaleVelocity = 0;
+	private lastBeatTime = 0;
+	private beatInterval = 800; // Will be dynamically updated based on music
+	private beatHistory: number[] = [];
+	private readonly MAX_BEAT_HISTORY = 10;
+
 	protected async createContent(): Promise<void> {
 		// Create particles in a planar distribution
 		const positions = new Float32Array(this.particleCount * 3);
 
 		for (let i = 0; i < this.particleCount; i++) {
-			// Create particles in a circular distribution around the elevated heart center
+			// Create particles in a wider circular distribution
 			const angle = Math.random() * Math.PI * 2;
-			const radius = Math.sqrt(Math.random()) * 3; // Much smaller initial size
+			const radius = Math.sqrt(Math.random()) * 4; // Adjusted radius
 
-			// Keep particles mostly in a plane (small z variation)
+			// Create particles around the center (no vertical offset)
 			const x = Math.cos(angle) * radius;
-			const y = Math.sin(angle) * radius + 5; // Center around elevated heart position
-			const z = (Math.random() - 0.5) * 0.3; // Very thin depth
+			const y = Math.sin(angle) * radius;
+			const z = (Math.random() - 0.5) * 0.1; // Thinner depth
 
 			positions[i * 3] = x;
 			positions[i * 3 + 1] = y;
 			positions[i * 3 + 2] = z;
 
-			// Initialize flow field (natural particle positions)
+			// Initialize flow field and velocities
 			this.flowField[i * 3] = x;
 			this.flowField[i * 3 + 1] = y;
 			this.flowField[i * 3 + 2] = z;
 
-			// Initialize velocities
 			this.velocities[i * 3] = 0;
 			this.velocities[i * 3 + 1] = 0;
 			this.velocities[i * 3 + 2] = 0;
@@ -59,12 +66,12 @@ export class Act3Human extends BaseAct {
 			new THREE.BufferAttribute(positions, 3),
 		);
 
-		// Configure particles as circles without glow
-		this.particleMaterial.size = 0.08;
+		// Configure particles
+		this.particleMaterial.size = 0.05; // Smaller particles
 		this.particleMaterial.color = new THREE.Color(0xff8866);
 		this.particleMaterial.transparent = true;
-		this.particleMaterial.opacity = 0.7;
-		this.particleMaterial.blending = THREE.NormalBlending; // No additive blending for cleaner circles
+		this.particleMaterial.opacity = 0.5; // More transparent
+		this.particleMaterial.blending = THREE.AdditiveBlending; // Use additive blending
 		this.particleMaterial.depthWrite = false;
 
 		// Make particles circular
@@ -102,168 +109,162 @@ export class Act3Human extends BaseAct {
 		this.actStartTime = performance.now();
 	}
 
-	private getHeartForce(position: THREE.Vector3): THREE.Vector3 {
-		// Calculate distance from heart center
-		const dx = position.x - this.heartCenter.x;
-		const dy = position.y - this.heartCenter.y; // Remove inversion
+	private getHeartForce(pos: THREE.Vector3, heartbeatPulse: number, bassLevel: number): THREE.Vector3 {
+		// Scale coordinates for heart equation
+		const scaledX = pos.x * this.heartScale;
+		const scaledY = pos.y * this.heartScale;
 
-		// Create 2D heart shape influence
-		const angle = Math.atan2(-dy, dx); // Invert angle instead
-		const radius = Math.sqrt(dx * dx + dy * dy);
-
-		// Heart curve factor (creates heart shape)
-		const heartRadius = this.heartScale * (1 + Math.sin(angle)); // Remove inversion, use regular sine
-		const heartShape = (Math.abs(angle) / Math.PI) ** 0.2; // More pronounced heart shape
-		const force = Math.exp(-radius / (heartRadius * (1 + heartShape))) * 0.05; // Much gentler force
-
-		// Create force vector pointing outward from heart
-		return new THREE.Vector3(
-			(dx / (radius + 0.1)) * force * 1,
-			(dy / (radius + 0.1)) * force * 1, // Much gentler push
-			0, // Keep forces in the plane
+		// Calculate heart curve value with pulsing effect
+		const pulseScale = 1 + heartbeatPulse * 0.15; // Heart expands with heartbeat
+		const curveValue = (
+			(scaledY / pulseScale - Math.sqrt(Math.abs((scaledX / pulseScale) * (scaledX / pulseScale)))) ** 2 +
+			(scaledX / pulseScale) * (scaledX / pulseScale) - 1
 		);
+
+		// Define force magnitude based on position relative to heart boundary
+		let forceMagnitude = 0;
+		const boundaryWidth = 0.1 + bassLevel * 0.1;
+		const distanceFromBoundary = Math.abs(curveValue);
+
+		if (curveValue < -boundaryWidth) {
+			// Inside heart: strong outward force
+			forceMagnitude = 1.2 * (1 + heartbeatPulse); // Constant outward force
+		} else if (curveValue > boundaryWidth) {
+			// Outside heart: gentle outward push that fades with distance
+			forceMagnitude = 0.3 * Math.exp(-distanceFromBoundary * 2) * (1 + bassLevel * 0.5);
+		} else {
+			// Near boundary: create flowing motion along the curve
+			const tangentX = -2 * scaledX / pulseScale;
+			const tangentY = -2 * (scaledY / pulseScale - Math.sqrt(Math.abs((scaledX / pulseScale) * (scaledX / pulseScale))));
+			const tangent = new THREE.Vector3(tangentX, tangentY, 0).normalize();
+			// Add slight outward component to tangential flow
+			const normal = new THREE.Vector3(pos.x, pos.y, 0).normalize();
+			return tangent.multiplyScalar(0.4).add(normal.multiplyScalar(0.2 * (1 + heartbeatPulse)));
+		}
+
+		// Calculate direction outward from heart center
+		const direction = new THREE.Vector3(pos.x, pos.y, 0).normalize();
+
+		// Return force vector with audio reactivity
+		return direction.multiplyScalar(forceMagnitude);
 	}
 
 	protected updateContent(deltaTime: number): void {
 		if (this.particles.length === 0) return;
 
 		const deltaSeconds = deltaTime / 1000;
-		const positions = this.particleGeometry.attributes.position
-			.array as Float32Array;
+		const positions = this.particleGeometry.attributes.position.array as Float32Array;
 
-		// Update heart timing - create realistic heartbeat pattern
+		// Get audio data
 		const volume = this.getSmoothedAudio("volume", 0.2);
 		const bassLevel = this.getSmoothedAudio("bass", 0.3);
+		const trebleLevel = this.getSmoothedAudio("treble", 0.15);
 
-		// Check if we're still in startup delay period
+		// Beat detection and heart scaling
 		const currentTime = this.time;
-		const timeSinceStart = currentTime - this.actStartTime;
-		const isStartupPhase = timeSinceStart < this.startupDelay;
+		const isBeat = bassLevel > 0.6 && (currentTime - this.lastBeatTime) > this.beatInterval * 0.5;
 
-		// Auto heartbeat or audio-triggered heartbeat (only after startup delay)
-		const timeSinceLastBeat = currentTime - this.lastHeartbeat;
+		if (isBeat) {
+			// Record beat timing
+			const beatDelta = currentTime - this.lastBeatTime;
+			this.lastBeatTime = currentTime;
 
-		// Create lub-dub heartbeat pattern
-		let shouldBeat = false;
-
-		if (!isStartupPhase) {
-			if (this.autoHeartbeat && timeSinceLastBeat > this.heartbeatInterval) {
-				shouldBeat = true;
-			} else if (
-				bassLevel > 0.6 &&
-				timeSinceLastBeat > this.heartbeatInterval * 0.5
-			) {
-				shouldBeat = true;
-				this.autoHeartbeat = false; // Switch to audio-driven mode
-			} else if (
-				bassLevel < 0.3 &&
-				timeSinceLastBeat > this.heartbeatInterval * 2
-			) {
-				this.autoHeartbeat = true; // Return to auto mode if audio is quiet
+			// Update beat history for BPM calculation
+			this.beatHistory.push(beatDelta);
+			if (this.beatHistory.length > this.MAX_BEAT_HISTORY) {
+				this.beatHistory.shift();
 			}
-		}
 
-		if (shouldBeat) {
-			this.lastHeartbeat = currentTime;
-			this.heartbeatCycle = (this.heartbeatCycle + 1) % 2; // Alternate between lub (0) and dub (1)
-		}
-
-		// Calculate heartbeat pulse with lub-dub pattern (only if not in startup phase)
-		const beatProgress = Math.min(
-			timeSinceLastBeat / (this.heartbeatInterval * 0.4),
-			1,
-		);
-
-		let heartbeatPulse = 0;
-		if (!isStartupPhase && beatProgress < 1) {
-			if (this.heartbeatCycle === 0) {
-				// "Lub" - stronger, longer pulse
-				heartbeatPulse = Math.exp(-beatProgress * 8) * (2 + bassLevel * 3);
-			} else {
-				// "Dub" - shorter, weaker pulse
-				heartbeatPulse = Math.exp(-beatProgress * 12) * (1.2 + bassLevel * 2);
+			// Calculate new beat interval (average of recent beats)
+			if (this.beatHistory.length > 2) {
+				this.beatInterval = this.beatHistory.reduce((a, b) => a + b, 0) / this.beatHistory.length;
 			}
+
+			// Trigger heart expansion on beat
+			this.targetScale = 2.3 + bassLevel * 0.4;
+			this.scaleVelocity += 1.2; // Increased expansion force
 		}
 
-		// Update particles with fluid-like motion
+		// Smooth scale animation
+		const scaleForce = (this.targetScale - this.currentScale) * 8; // Increased spring force
+		this.scaleVelocity += scaleForce * deltaSeconds;
+		this.scaleVelocity *= 0.92; // Stronger damping
+		this.currentScale += this.scaleVelocity * deltaSeconds;
+
+		// Gradually return to base scale
+		this.targetScale += (2 - this.targetScale) * deltaSeconds * 3;
+
+		// Update heart scale for force calculations
+		this.heartScale = this.currentScale;
+
+		// Update particles with improved fluid motion
 		const temp = new THREE.Vector3();
 
 		for (let i = 0; i < this.particleCount; i++) {
 			const i3 = i * 3;
 
-			// Get current particle position
 			temp.set(positions[i3], positions[i3 + 1], positions[i3 + 2]);
 
-			// Calculate heart force
-			const force = this.getHeartForce(temp);
+			// Calculate heart force with scaling pulse
+			const force = this.getHeartForce(temp, Math.abs(this.scaleVelocity) * 2, bassLevel);
 
-			// Apply force to velocity (scaled by heartbeat)
-			this.velocities[i3] += force.x * heartbeatPulse * 4; // Reduced multiplier
-			this.velocities[i3 + 1] += force.y * heartbeatPulse * 4; // Reduced multiplier
-			this.velocities[i3 + 2] = 0; // Keep particles in plane
+			// Add some noise modulated by treble
+			const noiseScale = 0.02 * (1 + trebleLevel); // Increased noise
+			const noiseX = (Math.random() - 0.5) * noiseScale;
+			const noiseY = (Math.random() - 0.5) * noiseScale;
 
-			// Apply velocity to position
-			positions[i3] += this.velocities[i3];
-			positions[i3 + 1] += this.velocities[i3 + 1];
-			positions[i3 + 2] = this.flowField[i3 + 2]; // Keep original z position
+			// Apply force with scale-based boost
+			const scaleBoost = 1 + Math.abs(this.scaleVelocity) * 4; // Increased scale boost
+			this.velocities[i3] += force.x * 5 * scaleBoost + noiseX; // Increased base force
+			this.velocities[i3 + 1] += force.y * 5 * scaleBoost + noiseY;
+			this.velocities[i3 + 2] = 0;
 
-			// Apply minimal damping for very quick motion
-			this.velocities[i3] *= 0.82;
-			this.velocities[i3 + 1] *= 0.82;
+			// Apply velocity with volume-based damping
+			positions[i3] += this.velocities[i3] * deltaSeconds * 60;
+			positions[i3 + 1] += this.velocities[i3 + 1] * deltaSeconds * 60;
+			positions[i3 + 2] = this.flowField[i3 + 2];
 
-			// Faster return to rest positions
-			const returnForce = 0.15;
-			positions[i3] +=
-				(this.flowField[i3] - positions[i3]) * returnForce * deltaSeconds;
-			positions[i3 + 1] +=
-				(this.flowField[i3 + 1] - positions[i3 + 1]) *
-				returnForce *
-				deltaSeconds;
+			// Dynamic damping
+			const dampingFactor = 0.96; // Reduced damping for more movement
+			this.velocities[i3] *= dampingFactor;
+			this.velocities[i3 + 1] *= dampingFactor;
+
+			// Weaker return force for more freedom of movement
+			const returnForce = 0.01 * (1 - bassLevel * 0.5);
+			positions[i3] += (this.flowField[i3] - positions[i3]) * returnForce * deltaSeconds;
+			positions[i3 + 1] += (this.flowField[i3 + 1] - positions[i3 + 1]) * returnForce * deltaSeconds;
 		}
 
 		this.particleGeometry.attributes.position.needsUpdate = true;
 	}
 
 	protected updateVisualEffects(deltaTime: number): void {
-		// Emotional color changes based on audio
+		// Get audio levels
 		const midLevel = this.getSmoothedAudio("mid", 0.2);
 		const volume = this.getSmoothedAudio("volume", 0.1);
 		const trebleLevel = this.getSmoothedAudio("treble", 0.15);
+		const bassLevel = this.getSmoothedAudio("bass", 0.3);
 
-		// Calculate time since last heartbeat for visual pulsing
-		const timeSinceHeartbeat = this.time - this.lastHeartbeat;
-		const beatProgress = Math.min(
-			timeSinceHeartbeat / (this.heartbeatInterval * 0.4),
-			1,
-		);
-		const timeSinceStart = this.time - this.actStartTime;
-		const isStartupPhase = timeSinceStart < this.startupDelay;
+		// Calculate intensity based on current scale animation
+		const scaleIntensity = Math.abs(this.scaleVelocity) * 2;
 
-		let heartbeatColor = 0;
-
-		// Only apply heartbeat visual effects after startup delay (no glow)
-		if (!isStartupPhase && beatProgress < 1) {
-			if (this.heartbeatCycle === 0) {
-				// "Lub" - red color shift
-				heartbeatColor = Math.exp(-beatProgress * 6) * 0.3;
-			} else {
-				// "Dub" - softer color shift
-				heartbeatColor = Math.exp(-beatProgress * 10) * 0.15;
-			}
-		}
-
-		// Warm color palette with heartbeat influence
-		const hue = 0.02 + midLevel * 0.03 - heartbeatColor * 0.02; // More red during heartbeat
-		const saturation = 0.8 + volume * 0.2 + heartbeatColor * 0.2;
-		const lightness = 0.5 + trebleLevel * 0.15; // Removed glow component
+		// Warm color palette with scale-based influence
+		const hue = 0.02 + midLevel * 0.03 - scaleIntensity * 0.02; // More red during expansion
+		const saturation = 0.7 + volume * 0.2 + scaleIntensity * 0.3;
+		const lightness = 0.45 + trebleLevel * 0.15 + scaleIntensity * 0.1;
 
 		// Update particle colors
 		this.particleMaterial.color.setHSL(hue, saturation, lightness);
 
-		// Dynamic opacity and size without glow effects
-		this.particleMaterial.opacity = 0.6 + volume * 0.2;
-		this.particleMaterial.size =
-			0.08 + trebleLevel * 0.05 + heartbeatColor * 0.03;
+		// Dynamic opacity and size based on scale
+		const expansionBoost = Math.max(0, this.scaleVelocity) * 0.5;
+		this.particleMaterial.opacity = 0.5 + volume * 0.2 + expansionBoost;
+
+		// Particle size reacts to scale velocity and audio
+		const baseSize = 0.05; // Smaller base size
+		const audioSize = bassLevel * 0.03 + trebleLevel * 0.02;
+		const pulseSize = Math.abs(this.scaleVelocity) * 0.1;
+		this.particleMaterial.size = baseSize + audioSize + pulseSize;
 	}
 
 	protected async animateEnter(): Promise<void> {
@@ -272,5 +273,10 @@ export class Act3Human extends BaseAct {
 
 	protected async animateExit(): Promise<void> {
 		return this.createFadeTransition(1000);
+	}
+
+	update(audioData: AudioData, deltaTime: number) {
+		// Call parent update to process audio
+		super.update(audioData, deltaTime);
 	}
 }
