@@ -1,4 +1,5 @@
 import type { AudioAnalyzer } from "../audio/AudioAnalyzer";
+import type { AnimationState } from "../types";
 
 export class PoetryOverlay {
 	private overlay: HTMLElement | null = null;
@@ -192,7 +193,7 @@ export class PoetryOverlay {
 	}
 
 	// Method to update based on animation state
-	public update(animationState: any): void {
+	public update(animationState: AnimationState): void {
 		if (!this.isVisible) return;
 		// Update based on animation state
 		if (animationState.act === 3) {

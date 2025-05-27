@@ -116,11 +116,11 @@ export class SceneManager implements SceneManagerInterface {
 	public updateAudioAnalyzer(audioAnalyzer: AudioAnalyzerInterface): void {
 		this.audioAnalyzer = audioAnalyzer;
 		// Update audio analyzer for all acts
-		Object.values(this.acts).forEach((act) => {
+		for (const act of Object.values(this.acts)) {
 			// Use type assertion to update the protected audioAnalyzer property
 			(act as { audioAnalyzer: AudioAnalyzerInterface }).audioAnalyzer =
 				audioAnalyzer;
-		});
+		}
 	}
 
 	/**
@@ -178,13 +178,17 @@ export class SceneManager implements SceneManagerInterface {
 		);
 
 		// Initialize each act
-		Object.values(this.acts).forEach((act) => act.init());
+		for (const act of Object.values(this.acts)) {
+			act.init();
+		}
 
 		// Start with Act 1 as current, but keep all acts visible and active
 		this.currentActInstance = this.acts[1];
 
 		// Enter all acts so they're all visible and running
-		Object.values(this.acts).forEach((act) => act.enter());
+		for (const act of Object.values(this.acts)) {
+			act.enter();
+		}
 
 		this.actProgressTimer = performance.now();
 
@@ -273,9 +277,9 @@ export class SceneManager implements SceneManagerInterface {
 		}
 
 		// Update ALL acts - don't pause any of them
-		Object.values(this.acts).forEach((act) => {
+		for (const act of Object.values(this.acts)) {
 			act.update(audioData, deltaTime);
-		});
+		}
 	}
 
 	/**
@@ -366,11 +370,14 @@ export class SceneManager implements SceneManagerInterface {
 	 */
 	public updateLayout(layoutName?: string): void {
 		// Update all acts with new positions
-		Object.values(this.acts).forEach((act) => {
-			if ((act as any).applyLayoutPosition) {
-				(act as any).applyLayoutPosition();
+		for (const act of Object.values(this.acts)) {
+			if (
+				typeof (act as { applyLayoutPosition?: () => void })
+					.applyLayoutPosition === "function"
+			) {
+				(act as { applyLayoutPosition: () => void }).applyLayoutPosition();
 			}
-		});
+		}
 
 		// Update camera controller
 		this.cameraController.updateLayout();
@@ -426,7 +433,12 @@ export class SceneManager implements SceneManagerInterface {
 		);
 	}
 
-	public setTimingConfig(config: any): void {
+	public setTimingConfig(config: {
+		transitionDuration?: number;
+		demoActDuration?: number;
+		demoTransitionDuration?: number;
+		performanceActDuration?: number;
+	}): void {
 		if (config.transitionDuration !== undefined) {
 			this.transitionDuration = config.transitionDuration;
 		}
@@ -470,10 +482,10 @@ export class SceneManager implements SceneManagerInterface {
 		}
 
 		// Dispose all acts
-		Object.values(this.acts).forEach((act) => {
+		for (const act of Object.values(this.acts)) {
 			if (act.dispose) {
 				act.dispose();
 			}
-		});
+		}
 	}
 }

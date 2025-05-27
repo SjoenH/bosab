@@ -309,7 +309,7 @@ export interface PoetryOverlayInterface {
 	showLine(lineIndex: number): void;
 	triggerOnBeat(audioAnalyzer: AudioAnalyzerInterface): void;
 	updateWithAudio(audioAnalyzer: AudioAnalyzerInterface): void;
-	update(animationState: any): void;
+	update(animationState: AnimationState): void;
 	dispose(): void;
 }
 

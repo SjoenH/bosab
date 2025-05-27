@@ -203,39 +203,40 @@ export class Act2Desert extends BaseAct {
 		const deltaSeconds = deltaTime / 1000;
 		const positions = this.particleGeometry.attributes.position
 			.array as Float32Array;
-		const bassLevel = this.getSmoothedAudio("bass", 0.3);
-		const volume = this.getSmoothedAudio("volume", 0.1);
+		const bassLevel = this.getSmoothedAudio("bass", 0.25); // Slightly faster smoothing for bass
+		const volume = this.getSmoothedAudio("volume", 0.15); // Slightly faster smoothing for volume
 		const midLevel = this.getSmoothedAudio("mid", 0.2);
 
 		// Update wind direction based on audio
-		this.windDirection.x += (Math.random() - 0.5) * 0.1 * volume;
-		this.windDirection.y += (Math.random() - 0.5) * 0.1 * volume;
+		this.windDirection.x += (Math.random() - 0.5) * 0.15 * volume; // Increased effect
+		this.windDirection.y += (Math.random() - 0.5) * 0.15 * volume; // Increased effect
 		this.windDirection.normalize();
 
-		// Update wind strength
+		// Update wind strength - more sensitive
 		this.windStrength = Math.max(
 			0,
-			Math.min(1, this.windStrength + (volume - 0.5) * 0.1),
+			Math.min(1, this.windStrength + (volume - 0.4) * 0.2), // More sensitive to volume changes
 		);
 
 		// Detect heartbeat
 		if (
-			bassLevel > 0.7 &&
-			this.time - this.lastHeartbeat > this.heartbeatInterval
+			bassLevel > 0.65 && // Slightly lower threshold
+			this.time - this.lastHeartbeat > this.heartbeatInterval * 0.8 // Allow faster re-trigger
 		) {
 			this.lastHeartbeat = this.time;
 		}
 		const timeSinceHeartbeat =
-			(this.time - this.lastHeartbeat) / this.heartbeatInterval;
+			(this.time - this.lastHeartbeat) / (this.heartbeatInterval * 0.9); // Make pulse feel a bit quicker
 		const heartbeatPulse =
-			Math.exp(-timeSinceHeartbeat * 5) *
-			Math.sin(timeSinceHeartbeat * Math.PI * 2);
+			Math.exp(-timeSinceHeartbeat * 4) * // Slightly slower decay for visibility
+			Math.sin(timeSinceHeartbeat * Math.PI * 2) *
+			(0.5 + bassLevel * 0.8); // Amplify effect of bass level, ensure baseline pulse
 
 		for (let i = 0; i < this.particleCount; i++) {
 			const i3 = i * 3;
 
 			// Horizontal wind influence
-			const windForceFactor = this.windStrength * deltaSeconds;
+			const windForceFactor = this.windStrength * deltaSeconds * 1.2; // Increased wind force
 			const particleTurbulenceHorizontal = this.turbulence[i3];
 
 			this.velocities[i3] +=
@@ -251,27 +252,27 @@ export class Act2Desert extends BaseAct {
 			);
 			const dynamicBaseY =
 				this.initialPositions[i3 + 1] +
-				heartbeatPulse * Math.exp(-distanceFromCenter * 0.1) * bassLevel * 1.5 +
-				Math.sin(this.time * 0.0005 + distanceFromCenter * 0.05) * midLevel;
+				heartbeatPulse * Math.exp(-distanceFromCenter * 0.08) * bassLevel * 2.5 + // Increased heartbeat impact
+				Math.sin(this.time * 0.0005 + distanceFromCenter * 0.05) * midLevel * 1.5; // Increased midLevel impact
 
 			// Vertical forces
 			// 1. Attraction/Gravity towards dynamicBaseY (settling force)
 			const heightDifference = positions[i3 + 1] - dynamicBaseY;
 			// Proportional force pulling towards base, stronger if further away
-			const settlingAcceleration = -heightDifference * 2.0;
+			const settlingAcceleration = -heightDifference * 2.5; // Stronger settling
 			this.velocities[i3 + 1] += settlingAcceleration * deltaSeconds;
 
 			// 2. Dusty wind lift
-			if (this.windStrength > 0.3) {
+			if (this.windStrength > 0.25) { // Lower threshold for lift
 				const particleTurbulenceVertical = this.turbulence[i3 + 1];
 				// Lift force proportional to wind strength and turbulence
 				const liftAcceleration =
-					this.windStrength * particleTurbulenceVertical * 5.0;
+					this.windStrength * particleTurbulenceVertical * 6.0; // Increased lift
 				this.velocities[i3 + 1] += liftAcceleration * deltaSeconds;
 
 				// Occasional stronger gust lifts some particles more (direct velocity impulse)
-				if (Math.random() < 0.05 * this.windStrength) {
-					this.velocities[i3 + 1] += Math.random() * this.windStrength * 0.2;
+				if (Math.random() < 0.06 * this.windStrength) { // More frequent gusts
+					this.velocities[i3 + 1] += Math.random() * this.windStrength * 0.25; // Stronger gusts
 				}
 			}
 
@@ -281,18 +282,18 @@ export class Act2Desert extends BaseAct {
 			positions[i3 + 2] += this.velocities[i3 + 2] * deltaSeconds;
 
 			// Damping
-			this.velocities[i3] *= 0.96;
-			this.velocities[i3 + 2] *= 0.96;
+			this.velocities[i3] *= 0.95; // Slightly less damping for more movement
+			this.velocities[i3 + 2] *= 0.95; // Slightly less damping
 
 			// Vertical damping - less if being lifted by strong wind
 			if (
 				this.velocities[i3 + 1] > 0.01 &&
-				this.windStrength > 0.4 &&
-				heightDifference > 0.1
+				this.windStrength > 0.35 && // Adjusted threshold
+				heightDifference > 0.05 // Adjusted threshold
 			) {
-				this.velocities[i3 + 1] *= 0.92;
+				this.velocities[i3 + 1] *= 0.91; // Less damping when lifted
 			} else {
-				this.velocities[i3 + 1] *= 0.88;
+				this.velocities[i3 + 1] *= 0.87; // Slightly stronger base damping
 			}
 
 			// Ground collision: prevent particles from going too far below their dynamicBaseY
@@ -301,14 +302,14 @@ export class Act2Desert extends BaseAct {
 				positions[i3 + 1] = dynamicBaseY - 0.05;
 				if (this.velocities[i3 + 1] < 0) {
 					// If wind is strong, kick it back up
-					if (this.windStrength > 0.35) {
+					if (this.windStrength > 0.3) { // Adjusted threshold
 						this.velocities[i3 + 1] =
 							Math.random() *
 							this.windStrength *
-							0.15 *
+							0.2 * // Increased kickback
 							this.turbulence[i3 + 1];
 					} else {
-						this.velocities[i3 + 1] *= -0.2;
+						this.velocities[i3 + 1] *= -0.15; // Softer bounce if no strong wind
 					}
 				}
 			}
@@ -334,7 +335,7 @@ export class Act2Desert extends BaseAct {
 		const blowAwayLimit = 60;
 		const dustMinY = 5.0;
 		const dustMaxY = 22.0;
-		const dustWindBaseSpeed = 10.0;
+		const dustWindBaseSpeed = 12.0; // Increased base speed
 		const gravityEffect = 0.0; // Dust does not fall
 
 		for (let i = 0; i < this.dustParticleCount; i++) {
@@ -342,8 +343,8 @@ export class Act2Desert extends BaseAct {
 
 			// Wind influence on dust
 			const dustWindForceFactor = this.windStrength * dustWindBaseSpeed;
-			const particleWindResponsiveness = 0.7 + Math.random() * 0.6;
-			const sidewindAmplification = 1.8; // Amplify sideways wind effect
+			const particleWindResponsiveness = 0.75 + Math.random() * 0.7; // Increased responsiveness
+			const sidewindAmplification = 2.0; // Slightly increased amplification
 
 			// Apply amplified sidewind for X-axis, standard for Z-axis (windDirection.y maps to Z)
 			this.dustVelocities[i3] +=
@@ -356,7 +357,7 @@ export class Act2Desert extends BaseAct {
 				this.windDirection.y *
 				dustWindForceFactor *
 				particleWindResponsiveness *
-				deltaSeconds;
+				deltaSeconds; // Standard Z-axis wind
 
 			// Vertical movement: dust stays in its layer
 			// No explicit lift, gravity is zero. Vertical position is maintained by boundaries and damping.
@@ -430,7 +431,7 @@ export class Act2Desert extends BaseAct {
 		const streakBlowAwayLimit = 75;
 		const streakMinY = 6.0;
 		const streakMaxY = 18.0;
-		const streakWindBaseSpeed = 35.0; // Streaks are much faster
+		const streakWindBaseSpeed = 40.0; // Streaks are much faster
 
 		for (let i = 0; i < this.streakParticleCount; i++) {
 			const i3 = i * 3;
@@ -438,7 +439,7 @@ export class Act2Desert extends BaseAct {
 			// Wind influence on streaks
 			const streakWindForceFactor = this.windStrength * streakWindBaseSpeed;
 			// Streaks are highly responsive to wind direction
-			const streakResponsiveness = 0.9 + Math.random() * 0.2;
+			const streakResponsiveness = 0.95 + Math.random() * 0.25; // Even more responsive
 
 			this.streakVelocities[i3] +=
 				this.windDirection.x *
@@ -514,48 +515,48 @@ export class Act2Desert extends BaseAct {
 	}
 
 	protected updateVisualEffects(deltaTime: number): void {
-		const volume = this.getSmoothedAudio("volume", 0.1);
-		const bassLevel = this.getSmoothedAudio("bass", 0.2);
-		const midLevel = this.getSmoothedAudio("mid", 0.15);
+		const volume = this.getSmoothedAudio("volume", 0.12); // Faster smoothing
+		const bassLevel = this.getSmoothedAudio("bass", 0.18); // Faster smoothing
+		const midLevel = this.getSmoothedAudio("mid", 0.15); // Faster smoothing
 
-		// Sunset-like color variations
-		const hue = 0.08 + midLevel * 0.02;
-		const saturation = 0.6 + bassLevel * 0.2;
-		const lightness = 0.5 + volume * 0.1;
+		// Sunset-like color variations - more pronounced
+		const hue = 0.08 + midLevel * 0.05; // Increased mid level effect on hue
+		const saturation = 0.5 + bassLevel * 0.35; // Increased bass effect on saturation, slightly lower base
+		const lightness = 0.45 + volume * 0.2; // Increased volume effect on lightness, slightly lower base
 		this.particleMaterial.color.setHSL(hue, saturation, lightness);
 
-		// Dynamic particle size and opacity for dusty wind effect
+		// Dynamic particle size and opacity for dusty wind effect - more pronounced
 		this.particleMaterial.opacity = Math.min(
-			0.85,
-			0.3 + this.windStrength * 0.6 + bassLevel * 0.1,
+			0.9, // Max opacity
+			0.25 + this.windStrength * 0.7 + bassLevel * 0.2, // Increased effect of wind and bass
 		);
 		this.particleMaterial.size = Math.max(
-			0.04,
-			0.12 + volume * 0.05 - this.windStrength * 0.05,
+			0.03, // Min size
+			0.1 + volume * 0.1 + this.windStrength * 0.1 - bassLevel * 0.05, // More dynamic sizing
 		);
 
-		// Update dust particle visuals
+		// Update dust particle visuals - more pronounced
 		if (this.dustParticleMaterial) {
 			this.dustParticleMaterial.opacity = Math.min(
-				0.7,
-				0.3 + this.windStrength * 0.4 + midLevel * 0.1,
+				0.75, // Max opacity
+				0.25 + this.windStrength * 0.5 + midLevel * 0.15, // Increased effect
 			);
 			this.dustParticleMaterial.size = Math.max(
-				0.05,
-				0.08 + this.windStrength * 0.04,
+				0.04, // Min size
+				0.07 + this.windStrength * 0.06 + midLevel * 0.03, // More dynamic
 			);
 		}
 
-		// Update wind streak visuals
+		// Update wind streak visuals - more pronounced
 		if (this.streakParticleMaterial) {
 			this.streakParticleMaterial.opacity = Math.min(
-				0.4,
-				0.05 + this.windStrength * 0.6 + midLevel * 0.05,
+				0.5, // Max opacity
+				0.03 + this.windStrength * 0.75 + midLevel * 0.1, // Increased effect
 			);
 			// Size could also be dynamic, e.g., slightly larger with more wind
 			this.streakParticleMaterial.size = Math.max(
-				0.02,
-				0.03 + this.windStrength * 0.03,
+				0.015, // Min size
+				0.025 + this.windStrength * 0.05 + volume * 0.02, // More dynamic
 			);
 		}
 	}

@@ -200,39 +200,39 @@ export const LAYOUT_CONFIG: LayoutConfigType = {
 /**
  * Helper functions for layout calculations
  */
-export class LayoutHelper {
+export const LayoutHelper = {
 	/**
 	 * Get the position for a specific act
 	 */
-	static getActPosition(actNumber: number): THREE.Vector3 {
+	getActPosition(actNumber: number): THREE.Vector3 {
 		const actConfig = LAYOUT_CONFIG.acts[actNumber];
 		return actConfig ? actConfig.position.clone() : new THREE.Vector3(0, 0, 0);
-	}
+	},
 
 	/**
 	 * Get camera position for a specific act
 	 */
-	static getCameraPosition(actNumber: number): THREE.Vector3 {
+	getCameraPosition(actNumber: number): THREE.Vector3 {
 		const actConfig = LAYOUT_CONFIG.acts[actNumber];
 		return actConfig
 			? actConfig.cameraPosition.clone()
 			: new THREE.Vector3(0, 0, 15);
-	}
+	},
 
 	/**
 	 * Get camera look-at target for a specific act
 	 */
-	static getCameraLookAt(actNumber: number): THREE.Vector3 {
+	getCameraLookAt(actNumber: number): THREE.Vector3 {
 		const actConfig = LAYOUT_CONFIG.acts[actNumber];
 		return actConfig
 			? actConfig.cameraLookAt.clone()
 			: new THREE.Vector3(0, 0, 0);
-	}
+	},
 
 	/**
 	 * Get bounding box for a specific act
 	 */
-	static getActBounds(actNumber: number): BoundingBox | null {
+	getActBounds(actNumber: number): BoundingBox | null {
 		const actConfig = LAYOUT_CONFIG.acts[actNumber];
 		if (!actConfig) return null;
 
@@ -240,12 +240,12 @@ export class LayoutHelper {
 			min: actConfig.boundingBox.min.clone(),
 			max: actConfig.boundingBox.max.clone(),
 		};
-	}
+	},
 
 	/**
 	 * Check if two acts would overlap visually
 	 */
-	static checkActOverlap(actNumber1: number, actNumber2: number): boolean {
+	checkActOverlap(actNumber1: number, actNumber2: number): boolean {
 		const bounds1 = LayoutHelper.getActBounds(actNumber1);
 		const bounds2 = LayoutHelper.getActBounds(actNumber2);
 
@@ -260,21 +260,21 @@ export class LayoutHelper {
 			bounds1.min.z <= bounds2.max.z &&
 			bounds1.max.z >= bounds2.min.z
 		);
-	}
+	},
 
 	/**
 	 * Calculate distance between two acts
 	 */
-	static getActDistance(actNumber1: number, actNumber2: number): number {
+	getActDistance(actNumber1: number, actNumber2: number): number {
 		const pos1 = LayoutHelper.getActPosition(actNumber1);
 		const pos2 = LayoutHelper.getActPosition(actNumber2);
 		return pos1.distanceTo(pos2);
-	}
+	},
 
 	/**
 	 * Apply alternative layout
 	 */
-	static applyLayout(layoutName: keyof AlternativeLayouts): boolean {
+	applyLayout(layoutName: keyof AlternativeLayouts): boolean {
 		const layout = LAYOUT_CONFIG.alternativeLayouts[layoutName];
 		if (!layout) {
 			console.warn(`Layout "${layoutName}" not found`);
@@ -296,13 +296,13 @@ export class LayoutHelper {
 
 		console.log(`📐 Applied "${layoutName}" layout`);
 		return true;
-	}
+	},
 
-	private static applyCircularLayout(layout: CircularLayoutConfig): void {
+	applyCircularLayout(layout: CircularLayoutConfig): void {
 		const { radius, acts } = layout;
 		const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
-		Object.entries(acts).forEach(([actNumber, config]) => {
+		for (const [actNumber, config] of Object.entries(acts)) {
 			const { angle } = config;
 			const x = Math.cos(angle) * radius;
 			const z = Math.sin(angle) * radius;
@@ -316,14 +316,14 @@ export class LayoutHelper {
 				z + Math.sin(angle) * cameraDistance,
 			);
 			LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(x, 0, z);
-		});
-	}
+		}
+	},
 
-	private static applyGridLayout(layout: GridLayoutConfig): void {
+	applyGridLayout(layout: GridLayoutConfig): void {
 		const { spacing, acts } = layout;
 		const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
-		Object.entries(acts).forEach(([actNumber, config]) => {
+		for (const [actNumber, config] of Object.entries(acts)) {
 			const { row, col } = config;
 			const x = (col - 0.5) * spacing;
 			const y = -(row - 0.5) * spacing;
@@ -332,27 +332,27 @@ export class LayoutHelper {
 			LAYOUT_CONFIG.acts[actNum].position.set(x, y, 0);
 			LAYOUT_CONFIG.acts[actNum].cameraPosition.set(x, y, cameraDistance);
 			LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(x, y, 0);
-		});
-	}
+		}
+	},
 
-	private static applyVerticalLayout(layout: VerticalLayoutConfig): void {
-		const { spacing, acts } = layout;
+	applyVerticalLayout(layout: VerticalLayoutConfig): void {
+		const { acts } = layout;
 		const cameraDistance = LAYOUT_CONFIG.spacing.cameraDistance;
 
-		Object.entries(acts).forEach(([actNumber, config]) => {
+		for (const [actNumber, config] of Object.entries(acts)) {
 			const { y } = config;
 			const actNum = Number.parseInt(actNumber);
 
 			LAYOUT_CONFIG.acts[actNum].position.set(0, y, 0);
 			LAYOUT_CONFIG.acts[actNum].cameraPosition.set(0, y, cameraDistance);
 			LAYOUT_CONFIG.acts[actNum].cameraLookAt.set(0, y, 0);
-		});
-	}
+		}
+	},
 
 	/**
 	 * Validate layout configuration
 	 */
-	static validateLayout(): string[] {
+	validateLayout(): string[] {
 		const issues: string[] = [];
 
 		// Check for overlapping acts
@@ -384,5 +384,5 @@ export class LayoutHelper {
 		}
 
 		return issues;
-	}
-}
+	},
+};

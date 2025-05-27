@@ -33,7 +33,9 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 		try {
 			// Create audio context
 			this.audioContext = new (
-				window.AudioContext || (window as any).webkitAudioContext
+				window.AudioContext ||
+				(window as Window & { webkitAudioContext?: typeof AudioContext })
+					.webkitAudioContext
 			)();
 
 			// Setup analyser

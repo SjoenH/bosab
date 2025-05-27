@@ -421,13 +421,13 @@ export class Controls {
 			this.demoTransitionDurationInput,
 		];
 
-		inputs.forEach((input) => {
+		for (const input of inputs) {
 			if (input) {
 				input.addEventListener("input", () => {
 					this.updateTimingDisplays();
 				});
 			}
-		});
+		}
 
 		// Initialize displays
 		this.updateTimingDisplays();

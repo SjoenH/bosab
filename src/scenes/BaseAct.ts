@@ -62,7 +62,7 @@ export abstract class BaseAct implements BaseActInterface {
 
 	// Position and bounds (set from layout config)
 	protected actPosition: THREE.Vector3 = new THREE.Vector3();
-	protected bounds: any = null;
+	protected bounds: THREE.Box3 | null = null;
 
 	// Performance optimization
 	protected needsUpdate = true;
@@ -149,7 +149,7 @@ export abstract class BaseAct implements BaseActInterface {
 	/**
 	 * Get the spatial bounds for this act
 	 */
-	public getBounds(): any {
+	public getBounds(): THREE.Box3 | null {
 		return this.bounds;
 	}
 
@@ -274,35 +274,51 @@ export abstract class BaseAct implements BaseActInterface {
 		smoothing = 0.1,
 	): number {
 		let currentValue: number;
+		let targetAnalyzerValue: number;
+
 		switch (type) {
 			case "volume":
 				currentValue = this.audioLevel;
+				targetAnalyzerValue = this.audioAnalyzer.getVolume();
 				break;
-			case "bass":
+			case "bass": {
 				currentValue = this.bassLevel;
+				targetAnalyzerValue = this.audioAnalyzer.getLowFreq();
 				break;
-			case "mid":
+			}
+			case "mid": {
 				currentValue = this.midLevel;
+				targetAnalyzerValue = this.audioAnalyzer.getMidFreq();
 				break;
-			case "treble":
+			}
+			case "treble": {
 				currentValue = this.trebleLevel;
+				targetAnalyzerValue = this.audioAnalyzer.getHighFreq();
 				break;
-			case "average":
+			}
+			case "average": {
 				currentValue =
 					(this.audioLevel +
 						this.bassLevel +
 						this.midLevel +
 						this.trebleLevel) /
 					4;
+				const avgVolume = this.audioAnalyzer.getVolume();
+				const avgBass = this.audioAnalyzer.getLowFreq();
+				const avgMid = this.audioAnalyzer.getMidFreq();
+				const avgTreble = this.audioAnalyzer.getHighFreq();
+				targetAnalyzerValue = (avgVolume + avgBass + avgMid + avgTreble) / 4;
 				break;
+			}
 			default:
 				currentValue = this.audioLevel;
+				targetAnalyzerValue = this.audioAnalyzer.getVolume();
 		}
 
-		// Smoothly interpolate to target value
-		return (
-			currentValue + (this.audioAnalyzer.getVolume() - currentValue) * smoothing
-		);
+		// This formula interpolates currentValue towards targetAnalyzerValue.
+		// If currentValue (from audioData) and targetAnalyzerValue (live from analyzer) are identical,
+		// the smoothing factor has no effect unless they represent different points in time or processing.
+		return currentValue + (targetAnalyzerValue - currentValue) * smoothing;
 	}
 
 	// Abstract methods that must be implemented by subclasses
@@ -317,30 +333,30 @@ export abstract class BaseAct implements BaseActInterface {
 	 */
 	public dispose(): void {
 		// Dispose of materials
-		this.materials.forEach((material) => {
+		for (const material of this.materials) {
 			if (material.dispose) {
 				material.dispose();
 			}
-		});
+		}
 
 		// Dispose of geometries
-		this.meshes.forEach((mesh) => {
+		for (const mesh of this.meshes) {
 			if (mesh.geometry.dispose) {
 				mesh.geometry.dispose();
 			}
-		});
+		}
 
-		this.particles.forEach((particle) => {
+		for (const particle of this.particles) {
 			if (particle.geometry.dispose) {
 				particle.geometry.dispose();
 			}
-		});
+		}
 
-		this.lines.forEach((line) => {
+		for (const line of this.lines) {
 			if (line.geometry.dispose) {
 				line.geometry.dispose();
 			}
-		});
+		}
 
 		// Remove from scene
 		if (this.scene && this.group) {
@@ -392,19 +408,21 @@ export abstract class BaseAct implements BaseActInterface {
 	 */
 	protected applyFade(fadeValue: number): void {
 		// Update all materials
-		this.materials.forEach((material) => {
+		for (const material of this.materials) {
 			if ("opacity" in material) {
-				const mat = material as THREE.Material & { opacity: number };
-				mat.opacity = fadeValue;
-				mat.transparent = true;
-				mat.needsUpdate = true;
+				(material as THREE.Material & { opacity: number }).opacity = fadeValue;
+
+				// Ensure material is transparent
+				material.transparent = true;
 
 				// Enhanced emissive effect during transitions
 				if ("emissiveIntensity" in material) {
-					(material as any).emissiveIntensity = fadeValue * 2;
+					(
+						material as THREE.Material & { emissiveIntensity?: number }
+					).emissiveIntensity = fadeValue * 2;
 				}
 			}
-		});
+		}
 
 		// Scale effect during transitions
 		const scale =
