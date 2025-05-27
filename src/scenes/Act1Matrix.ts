@@ -41,6 +41,48 @@ export class Act1Matrix extends BaseAct {
 		// Initialize fall speeds for Matrix rain effect
 		this.fallSpeeds = new Float32Array(this.particleCount);
 
+		// Create character texture for Matrix rain effect
+		const charCanvas = document.createElement('canvas');
+		const charCtx = charCanvas.getContext('2d');
+		if (!charCtx) throw new Error('Could not create 2D context for character texture');
+
+		// Make canvas larger for bigger characters and longer trails
+		charCanvas.width = 256;   // Increased from 128
+		charCanvas.height = 1024;  // Increased from 512
+
+		// Set up text rendering with larger font
+		charCtx.fillStyle = '#00ff99';
+		charCtx.textAlign = 'center';
+		charCtx.textBaseline = 'middle';
+		charCtx.font = 'bold 192px monospace';  // Increased from 96px
+
+		// Draw the main character (randomly 0 or 1)
+		const char = Math.random() < 0.5 ? '0' : '1';
+		charCtx.fillText(char, 128, 128);  // Adjusted center point
+
+		// Create trail effect with multiple fading copies
+		for (let i = 1; i < 6; i++) {
+			const opacity = 1 - (i * 0.2);
+			charCtx.fillStyle = `rgba(0, 255, 153, ${opacity})`;
+			charCtx.fillText(char, 128, 128 + i * 192);  // Adjusted spacing for larger font
+		}
+
+		// Add stronger glow effect
+		const glowGradient = charCtx.createRadialGradient(128, 128, 0, 128, 128, 96);  // Adjusted for larger size
+		glowGradient.addColorStop(0, 'rgba(0, 255, 153, 0.3)');
+		glowGradient.addColorStop(1, 'rgba(0, 255, 153, 0)');
+		charCtx.globalCompositeOperation = 'screen';
+		charCtx.fillStyle = glowGradient;
+		charCtx.fillRect(0, 0, 256, 256);  // Adjusted for larger canvas
+
+		const charTexture = new THREE.CanvasTexture(charCanvas);
+		charTexture.needsUpdate = true;
+
+		// Adjust texture properties for better trails
+		charTexture.minFilter = THREE.LinearFilter;
+		charTexture.magFilter = THREE.LinearFilter;
+		charTexture.generateMipmaps = false;
+
 		// Load font for statistical text
 		try {
 			this.font = await new Promise((resolve, reject) => {
@@ -57,34 +99,58 @@ export class Act1Matrix extends BaseAct {
 
 		// Create vertically arranged particles
 		const positions = new Float32Array(this.particleCount * 3);
-		for (let i = 0; i < this.particleCount; i++) {
-			// Create columns of particles
-			const col = i % 40; // 40 columns
-			const row = Math.floor(i / 40); // Multiple rows
+		const colors = new Float32Array(this.particleCount * 3);
+		const sizes = new Float32Array(this.particleCount);
 
-			const x = (col - 20) * 1.0; // Horizontal spacing
-			const y = Math.random() * 80 - 40; // Random vertical start positions
-			const z = -10 + Math.random() * 20; // Varied depth
+		for (let i = 0; i < this.particleCount; i++) {
+			// Create tighter columns for Matrix characters
+			const col = i % 30; // 30 columns (reduced from 40 for bigger characters)
+			const row = Math.floor(i / 30);
+
+			const x = (col - 15) * 2.5;  // Increased column spacing
+			const y = Math.random() * 80 - 40;
+			const z = -10 + Math.random() * 20;
 
 			positions[i * 3] = x;
 			positions[i * 3 + 1] = y;
 			positions[i * 3 + 2] = z;
 
 			// Initialize random fall speeds
-			this.fallSpeeds[i] = 2 + Math.random() * 3; // Different speeds for each particle
+			this.fallSpeeds[i] = 4 + Math.random() * 6;
+
+			// Initialize colors with brighter values at spawn
+			colors[i * 3] = 0; // R
+			colors[i * 3 + 1] = 1.0; // G
+			colors[i * 3 + 2] = 0.7; // B
+
+			// Initialize sizes for larger characters
+			sizes[i] = 4.0 + Math.random() * 0.8;  // Increased base size
 		}
 
 		this.particleGeometry.setAttribute(
 			"position",
 			new THREE.BufferAttribute(positions, 3),
 		);
+		this.particleGeometry.setAttribute(
+			"color",
+			new THREE.BufferAttribute(colors, 3),
+		);
+		this.particleGeometry.setAttribute(
+			"size",
+			new THREE.BufferAttribute(sizes, 1),
+		);
 
-		// Matrix-like particles with sharper, more clinical look
-		this.particleMaterial.size = 0.2;
-		this.particleMaterial.color = new THREE.Color(0x00ff99);
-		this.particleMaterial.transparent = true;
-		this.particleMaterial.opacity = 0.8;
-		this.particleMaterial.blending = THREE.AdditiveBlending;
+		// Update material settings for character particles
+		this.particleMaterial = new THREE.PointsMaterial({
+			size: 2.0,  // Increased base size
+			map: charTexture,
+			vertexColors: true,
+			transparent: true,
+			opacity: 0.95,
+			blending: THREE.AdditiveBlending,
+			depthWrite: false,
+			alphaTest: 0.05  // Reduced for smoother edges
+		});
 
 		// Create particle system
 		this.particles.push(
@@ -263,48 +329,81 @@ export class Act1Matrix extends BaseAct {
 		if (this.particles.length === 0) return;
 
 		const deltaSeconds = deltaTime / 1000;
-
-		// Update particle positions for Matrix rain effect
-		const positions = this.particleGeometry.attributes.position
-			.array as Float32Array;
 		const audioLevel = this.getSmoothedAudio("volume", 0.1);
 		const trebleLevel = this.getSmoothedAudio("treble", 0.1);
+		const bassLevel = this.getSmoothedAudio("bass", 0.15);
+
+		// Update particle positions for Matrix rain effect
+		const positions = this.particleGeometry.attributes.position.array as Float32Array;
+		const colors = this.particleGeometry.attributes.color.array as Float32Array;
+		const sizes = this.particleGeometry.attributes.size.array as Float32Array;
 
 		for (let i = 0; i < this.particleCount; i++) {
 			const i3 = i * 3;
 
-			// Matrix fall effect
-			positions[i3 + 1] -= this.fallSpeeds[i] * deltaSeconds * (1 + audioLevel); // Fall speed affected by audio
+			// Matrix fall effect with audio-reactive speed
+			const fallSpeed = this.fallSpeeds[i] * (1 + audioLevel * 0.5);
+			positions[i3 + 1] -= fallSpeed * deltaSeconds;
 
-			// Add subtle horizontal drift based on treble
-			positions[i3] +=
-				Math.sin(this.time * 0.001 + i * 0.1) * trebleLevel * 0.02;
+			// Add very subtle horizontal drift based on treble
+			positions[i3] += Math.sin(this.time * 0.001 + i * 0.1) * trebleLevel * 0.005;
+
+			// Calculate normalized position for fade effects
+			const normalizedY = (positions[i3 + 1] + 40) / 80; // 0 at bottom, 1 at top
+			const speedFactor = fallSpeed / 10; // Normalize by max speed
+
+			// Update character size based on position and speed
+			// Leading characters are larger
+			const isLeadChar = normalizedY > 0.8;
+			const baseSize = isLeadChar ? 2.0 : 1.5;
+			sizes[i] = baseSize * (0.8 + speedFactor * 0.2) * (1 + trebleLevel * 0.2);
+
+			// Update character brightness
+			// Leading characters are brightest, trailing ones fade out
+			let brightness: number;
+			if (isLeadChar) {
+				// Leading character is brightest and pulses with the audio
+				brightness = 1.0 + bassLevel * 0.3;
+			} else {
+				// Trail characters fade out gradually
+				brightness = Math.max(0.2, normalizedY * 0.8) * (0.7 + speedFactor * 0.3);
+			}
+
+			// Apply color with Matrix green tint
+			colors[i3] = 0; // R
+			colors[i3 + 1] = brightness; // G (Matrix green)
+			colors[i3 + 2] = brightness * 0.7; // B (slight blue tint)
 
 			// Reset particles that fall below the view
 			if (positions[i3 + 1] < -40) {
 				positions[i3 + 1] = 40; // Reset to top
-				positions[i3] = ((i % 40) - 20) * 1.0 + (Math.random() - 0.5) * 0.5; // Keep in column with slight variance
-				this.fallSpeeds[i] = 2 + Math.random() * 3; // New random speed
+				// Keep particles in strict columns for Matrix effect
+				positions[i3] = ((i % 40) - 20) * 1.2;
+				this.fallSpeeds[i] = 4 + Math.random() * 6;
+
+				// Full brightness for new characters
+				colors[i3] = 0;
+				colors[i3 + 1] = 1.0;
+				colors[i3 + 2] = 0.7;
 			}
 
-			// Keep particles in their general columns
-			if (Math.abs(positions[i3]) > 20) {
-				positions[i3] = ((i % 40) - 20) * 1.0;
-			}
+			// Ensure particles stay in their columns
+			const targetX = ((i % 40) - 20) * 1.2;
+			positions[i3] += (targetX - positions[i3]) * 0.1;
 		}
 
 		// Update statistical text falling animation
 		for (let i = 0; i < this.textMeshes.length; i++) {
 			const mesh = this.textMeshes[i];
 
-			// Fall down
+			// Fall down with reactive speed
 			mesh.position.y -= this.textFallSpeeds[i] * deltaSeconds * (1 + audioLevel * 0.5);
 
 			// Rotate slowly
 			mesh.rotation.z += this.textRotations[i] * deltaSeconds;
 
-			// Add slight horizontal drift
-			mesh.position.x += Math.sin(this.time * 0.0005 + i) * trebleLevel * 0.01;
+			// Very subtle horizontal drift
+			mesh.position.x += Math.sin(this.time * 0.0005 + i) * trebleLevel * 0.005;
 
 			// Respawn text that falls below view
 			if (mesh.position.y < -50) {
@@ -312,28 +411,32 @@ export class Act1Matrix extends BaseAct {
 			}
 		}
 
-		// Periodically spawn new text elements
-		if (this.font && Math.random() < 0.005 * (1 + audioLevel)) { // Higher chance with more audio
-			if (this.textMeshes.length < 25) { // Max 25 text elements
+		// Periodically spawn new text elements with audio-reactive frequency
+		if (this.font && Math.random() < 0.005 * (1 + audioLevel)) {
+			if (this.textMeshes.length < 25) {
 				this.addRandomText();
 			}
 		}
 
-		// Update waveform
-		const waveformPositions = this.waveformGeometry.attributes.position
-			.array as Float32Array;
-		const bassLevel = this.getSmoothedAudio("bass", 0.2);
+		// Update waveform with improved smoothing
+		const waveformPositions = this.waveformGeometry.attributes.position.array as Float32Array;
 
-		// Shift existing values
+		// Shift existing values for smoother transitions
 		this.dataValues.shift();
-		this.dataValues.push(bassLevel * 5);
+		// Scale bass level for more pronounced waveform
+		this.dataValues.push(bassLevel * 6);
 
-		// Update waveform geometry
+		// Update waveform geometry with smoothed values
 		for (let i = 0; i < this.waveformPoints; i++) {
-			waveformPositions[i * 3 + 1] = this.dataValues[i];
+			const smooth = (this.dataValues[i] +
+				(this.dataValues[i - 1] || this.dataValues[i]) +
+				(this.dataValues[i + 1] || this.dataValues[i])) / 3;
+			waveformPositions[i * 3 + 1] = smooth;
 		}
 
 		this.particleGeometry.attributes.position.needsUpdate = true;
+		this.particleGeometry.attributes.color.needsUpdate = true;
+		this.particleGeometry.attributes.size.needsUpdate = true;
 		this.waveformGeometry.attributes.position.needsUpdate = true;
 	}
 
