@@ -21,6 +21,7 @@
   <div id="controls">
     <button id="playButton">▶ Play Auto Mode</button>
     <button id="fullscreenButton">⛶ Fullscreen</button>
+    <button id="configButton">⚙️ Timing</button>
     <div id="actIndicator">Act 1</div>
     <div id="micStatus">🔇 No Mic</div>
     <div id="audioLevels">
@@ -45,12 +46,57 @@
         <div class="level-indicator" id="beatIndicator"></div>
       </div>
     </div>
-    <div id="instructions">← → Navigate | Space: Play/Pause | F: Fullscreen | M: Mic | D: Demo | Q: Quick Demo | 1-4:
-      Acts</div>
+    <div id="instructions">← → Navigate | Space: Play/Pause | F: Fullscreen | M: Mic | ⚙️: Timing | D: Demo | Q: Quick
+      Demo | 1-4: Acts</div>
   </div>
 
   <!-- Poetry overlay for Act 3 -->
   <div id="poetryOverlay"></div>
+
+  <!-- Timing Configuration Panel -->
+  <div id="timingConfig" class="config-panel hidden">
+    <div class="config-content">
+      <h3>Show Timing Configuration</h3>
+
+      <div class="config-section">
+        <h4>Performance Mode (Full Show)</h4>
+        <div class="config-item">
+          <label for="actDuration">Act Duration (minutes):</label>
+          <input type="number" id="actDuration" min="1" max="30" step="0.25" value="6.25">
+          <span class="duration-display">6.25 min</span>
+        </div>
+        <div class="config-item">
+          <label for="transitionDuration">Transition Duration (seconds):</label>
+          <input type="number" id="transitionDuration" min="1" max="10" step="0.5" value="3">
+          <span class="duration-display">3 sec</span>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h4>Demo Mode (Quick Preview)</h4>
+        <div class="config-item">
+          <label for="demoActDuration">Demo Act Duration (seconds):</label>
+          <input type="number" id="demoActDuration" min="1" max="30" step="0.5" value="5">
+          <span class="duration-display">5 sec</span>
+        </div>
+        <div class="config-item">
+          <label for="demoTransitionDuration">Demo Transition Duration (seconds):</label>
+          <input type="number" id="demoTransitionDuration" min="0.1" max="5" step="0.1" value="0.5">
+          <span class="duration-display">0.5 sec</span>
+        </div>
+      </div>
+
+      <div class="config-info">
+        <p><strong>Total Show Duration:</strong> <span id="totalDuration">25 minutes</span></p>
+        <p><strong>Demo Duration:</strong> <span id="demoDuration">20 seconds</span></p>
+      </div>
+
+      <div class="config-actions">
+        <button id="resetTimingButton">Reset to Defaults</button>
+        <button id="closeConfigButton">Apply & Close</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>

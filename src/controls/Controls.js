@@ -3,6 +3,8 @@ export class Controls {
         this.app = app
         this.playButton = null
         this.fullscreenButton = null
+        this.configButton = null
+        this.timingConfig = null
         this.actIndicator = null
         this.micStatus = null
         this.volumeLevel = null
@@ -11,11 +13,21 @@ export class Controls {
         this.highLevel = null
         this.beatIndicator = null
         this.isInitialized = false
+
+        // Timing configuration elements
+        this.actDurationInput = null
+        this.transitionDurationInput = null
+        this.demoActDurationInput = null
+        this.demoTransitionDurationInput = null
+        this.totalDurationDisplay = null
+        this.demoDurationDisplay = null
     }
 
     init() {
         this.playButton = document.getElementById('playButton')
         this.fullscreenButton = document.getElementById('fullscreenButton')
+        this.configButton = document.getElementById('configButton')
+        this.timingConfig = document.getElementById('timingConfig')
         this.actIndicator = document.getElementById('actIndicator')
         this.micStatus = document.getElementById('micStatus')
         this.volumeLevel = document.getElementById('volumeLevel')
@@ -24,6 +36,14 @@ export class Controls {
         this.highLevel = document.getElementById('highLevel')
         this.beatIndicator = document.getElementById('beatIndicator')
 
+        // Timing configuration elements
+        this.actDurationInput = document.getElementById('actDuration')
+        this.transitionDurationInput = document.getElementById('transitionDuration')
+        this.demoActDurationInput = document.getElementById('demoActDuration')
+        this.demoTransitionDurationInput = document.getElementById('demoTransitionDuration')
+        this.totalDurationDisplay = document.getElementById('totalDuration')
+        this.demoDurationDisplay = document.getElementById('demoDuration')
+
         if (!this.playButton || !this.actIndicator) {
             console.warn('Control elements not found')
             return
@@ -31,6 +51,7 @@ export class Controls {
 
         this.setupPlayButton()
         this.setupFullscreenButton()
+        this.setupTimingConfig()
         this.updateActIndicator(1)
         this.updateMicrophoneStatus('disconnected')
         this.isInitialized = true
@@ -251,5 +272,168 @@ export class Controls {
             highFreq: audioAnalyzer.getHighFreq(),
             beat: audioAnalyzer.getBeat()
         })
+    }
+
+    setupTimingConfig() {
+        if (!this.configButton || !this.timingConfig) {
+            console.warn('Timing configuration elements not found')
+            return
+        }
+
+        // Show/hide config panel
+        this.configButton.addEventListener('click', () => {
+            this.showTimingConfig()
+        })
+
+        // Close config panel
+        const closeButton = document.getElementById('closeConfigButton')
+        const resetButton = document.getElementById('resetTimingButton')
+
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                this.hideTimingConfig()
+            })
+        }
+
+        if (resetButton) {
+            resetButton.addEventListener('click', () => {
+                this.resetTimingDefaults()
+            })
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Escape' && !this.timingConfig.classList.contains('hidden')) {
+                this.hideTimingConfig()
+            }
+        })
+
+        // Update displays when inputs change
+        const inputs = [
+            this.actDurationInput,
+            this.transitionDurationInput,
+            this.demoActDurationInput,
+            this.demoTransitionDurationInput
+        ]
+
+        inputs.forEach(input => {
+            if (input) {
+                input.addEventListener('input', () => {
+                    this.updateTimingDisplays()
+                })
+            }
+        })
+
+        // Initialize displays
+        this.updateTimingDisplays()
+    }
+
+    showTimingConfig() {
+        if (!this.timingConfig) return
+        this.timingConfig.classList.remove('hidden')
+        this.updateTimingDisplays()
+    }
+
+    hideTimingConfig() {
+        if (!this.timingConfig) return
+        this.timingConfig.classList.add('hidden')
+        this.applyTimingSettings()
+    }
+
+    updateTimingDisplays() {
+        // Update individual duration displays
+        if (this.actDurationInput) {
+            const actDuration = parseFloat(this.actDurationInput.value) || 6.25
+            const displaySpan = this.actDurationInput.parentNode.querySelector('.duration-display')
+            if (displaySpan) {
+                displaySpan.textContent = `${actDuration} min`
+            }
+        }
+
+        if (this.transitionDurationInput) {
+            const transitionDuration = parseFloat(this.transitionDurationInput.value) || 3
+            const displaySpan = this.transitionDurationInput.parentNode.querySelector('.duration-display')
+            if (displaySpan) {
+                displaySpan.textContent = `${transitionDuration} sec`
+            }
+        }
+
+        if (this.demoActDurationInput) {
+            const demoActDuration = parseFloat(this.demoActDurationInput.value) || 5
+            const displaySpan = this.demoActDurationInput.parentNode.querySelector('.duration-display')
+            if (displaySpan) {
+                displaySpan.textContent = `${demoActDuration} sec`
+            }
+        }
+
+        if (this.demoTransitionDurationInput) {
+            const demoTransitionDuration = parseFloat(this.demoTransitionDurationInput.value) || 0.5
+            const displaySpan = this.demoTransitionDurationInput.parentNode.querySelector('.duration-display')
+            if (displaySpan) {
+                displaySpan.textContent = `${demoTransitionDuration} sec`
+            }
+        }
+
+        // Update total duration calculations
+        this.updateTotalDurations()
+    }
+
+    updateTotalDurations() {
+        const actDuration = parseFloat(this.actDurationInput?.value) || 6.25
+        const transitionDuration = parseFloat(this.transitionDurationInput?.value) || 3
+        const demoActDuration = parseFloat(this.demoActDurationInput?.value) || 5
+        const demoTransitionDuration = parseFloat(this.demoTransitionDurationInput?.value) || 0.5
+
+        // Calculate full show duration (4 acts + 3 transitions)
+        const totalMinutes = (actDuration * 4) + ((transitionDuration / 60) * 3)
+
+        // Calculate demo duration (4 acts + 3 transitions)
+        const demoSeconds = (demoActDuration * 4) + (demoTransitionDuration * 3)
+
+        if (this.totalDurationDisplay) {
+            this.totalDurationDisplay.textContent = `${totalMinutes.toFixed(1)} minutes`
+        }
+
+        if (this.demoDurationDisplay) {
+            this.demoDurationDisplay.textContent = `${demoSeconds.toFixed(1)} seconds`
+        }
+    }
+
+    resetTimingDefaults() {
+        if (this.actDurationInput) this.actDurationInput.value = '6.25'
+        if (this.transitionDurationInput) this.transitionDurationInput.value = '3'
+        if (this.demoActDurationInput) this.demoActDurationInput.value = '5'
+        if (this.demoTransitionDurationInput) this.demoTransitionDurationInput.value = '0.5'
+
+        this.updateTimingDisplays()
+        this.showMessage('Timing reset to defaults')
+    }
+
+    applyTimingSettings() {
+        const actDuration = parseFloat(this.actDurationInput?.value) || 6.25
+        const transitionDuration = parseFloat(this.transitionDurationInput?.value) || 3
+        const demoActDuration = parseFloat(this.demoActDurationInput?.value) || 5
+        const demoTransitionDuration = parseFloat(this.demoTransitionDurationInput?.value) || 0.5
+
+        // Apply settings to the performance app
+        if (this.app.setTimingConfig) {
+            this.app.setTimingConfig({
+                actDuration: actDuration * 60 * 1000, // Convert to milliseconds
+                transitionDuration: transitionDuration * 1000, // Convert to milliseconds
+                demoActDuration: demoActDuration * 1000, // Convert to milliseconds
+                demoTransitionDuration: demoTransitionDuration * 1000 // Convert to milliseconds
+            })
+        }
+
+        this.showMessage(`Timing updated: ${actDuration}min acts, ${demoActDuration}s demo`, 2000)
+    }
+
+    getTimingConfig() {
+        return {
+            actDuration: parseFloat(this.actDurationInput?.value) || 6.25,
+            transitionDuration: parseFloat(this.transitionDurationInput?.value) || 3,
+            demoActDuration: parseFloat(this.demoActDurationInput?.value) || 5,
+            demoTransitionDuration: parseFloat(this.demoTransitionDurationInput?.value) || 0.5
+        }
     }
 }

@@ -30,8 +30,11 @@ export class SceneManager {
         this.demoMode = false
         this.autoProgress = false
         this.actProgressTimer = 0
+
+        // Configurable timing values
+        this.performanceActDuration = 6.25 * 60 * 1000 // 6.25 minutes for performance
         this.demoActDuration = 5000 // 5 seconds per act in demo
-        this.demoTransitionDuration = 500 // 0.5 seconds transitions in demo
+        this.demoTransitionDuration = 3000 // 3 seconds transitions in demo
     }
 
     init() {
@@ -268,7 +271,7 @@ export class SceneManager {
     }
 
     updateAutoProgress(time) {
-        const duration = this.demoMode ? this.demoActDuration : 6.25 * 60 * 1000 // 6.25 minutes for performance
+        const duration = this.demoMode ? this.demoActDuration : this.performanceActDuration
         const elapsed = time - this.actProgressTimer
 
         if (elapsed >= duration) {
@@ -297,6 +300,28 @@ export class SceneManager {
         this.demoActDuration = actDuration
         this.demoTransitionDuration = transitionDuration
         console.log(`⏱️ Demo timing: ${actDuration}ms acts, ${transitionDuration}ms transitions`)
+    }
+
+    setTimingConfig(config) {
+        if (config.transitionDuration !== undefined) {
+            this.transitionDuration = config.transitionDuration
+        }
+        if (config.demoActDuration !== undefined) {
+            this.demoActDuration = config.demoActDuration
+        }
+        if (config.demoTransitionDuration !== undefined) {
+            this.demoTransitionDuration = config.demoTransitionDuration
+        }
+        if (config.performanceActDuration !== undefined) {
+            this.performanceActDuration = config.performanceActDuration
+        }
+
+        console.log('⏱️ Scene manager timing updated:', {
+            performanceAct: `${this.performanceActDuration / 60000}min`,
+            transition: `${this.transitionDuration / 1000}s`,
+            demoAct: `${this.demoActDuration / 1000}s`,
+            demoTransition: `${this.demoTransitionDuration / 1000}s`
+        })
     }
 
     // Quick cycle through all acts for testing

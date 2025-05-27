@@ -20,6 +20,14 @@ export class PerformanceApp {
         this.actStartTime = 0
         this.actDuration = 6.25 * 60 * 1000 // 6.25 minutes in milliseconds
 
+        // Timing configuration
+        this.timingConfig = {
+            actDuration: 6.25 * 60 * 1000, // 6.25 minutes in milliseconds
+            transitionDuration: 3 * 1000, // 3 seconds in milliseconds
+            demoActDuration: 5 * 1000, // 5 seconds in milliseconds
+            demoTransitionDuration: 0.5 * 1000 // 0.5 seconds in milliseconds
+        }
+
         // Performance optimization
         this.lastFrameTime = 0
         this.targetFPS = 60
@@ -195,7 +203,9 @@ export class PerformanceApp {
 
     updateAutoPlay(currentTime) {
         const elapsed = currentTime - this.actStartTime
-        if (elapsed >= this.actDuration && this.currentAct < 4) {
+        const duration = this.sceneManager.demoMode ? this.timingConfig.demoActDuration : this.timingConfig.actDuration
+
+        if (elapsed >= duration && this.currentAct < 4) {
             this.nextAct()
         }
     }
@@ -309,5 +319,34 @@ export class PerformanceApp {
         } else if (this.audioAnalyzer.isEnabled && !wasConnected) {
             this.controls.showMessage('Microphone enabled 🎤', 2000)
         }
+    }
+
+    setTimingConfig(config) {
+        // Update timing configuration
+        this.timingConfig = { ...this.timingConfig, ...config }
+
+        // Update actDuration for backward compatibility
+        this.actDuration = this.timingConfig.actDuration
+
+        // Apply timing to scene manager
+        if (this.sceneManager) {
+            this.sceneManager.setTimingConfig({
+                transitionDuration: this.timingConfig.transitionDuration,
+                demoActDuration: this.timingConfig.demoActDuration,
+                demoTransitionDuration: this.timingConfig.demoTransitionDuration,
+                performanceActDuration: this.timingConfig.actDuration
+            })
+        }
+
+        console.log('⏱️ Timing configuration updated:', {
+            actDuration: `${this.timingConfig.actDuration / 60000}min`,
+            transitionDuration: `${this.timingConfig.transitionDuration / 1000}s`,
+            demoActDuration: `${this.timingConfig.demoActDuration / 1000}s`,
+            demoTransitionDuration: `${this.timingConfig.demoTransitionDuration / 1000}s`
+        })
+    }
+
+    getTimingConfig() {
+        return { ...this.timingConfig }
     }
 }
