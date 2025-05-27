@@ -302,20 +302,24 @@ export class Controls {
 	}
 
 	private updateMicrophoneStatus(
-		status: "connected" | "silent" | "disconnected",
+		status: "live" | "disabled" | "silent" | "disconnected",
 	): void {
 		if (!this.micStatus) return;
 
 		switch (status) {
-			case "connected":
+			case "live":
 				this.micStatus.textContent = "🎤 Live Mic";
 				this.micStatus.className = "connected";
+				break;
+			case "disabled":
+				this.micStatus.textContent = "🎤 Mic Disabled";
+				this.micStatus.className = "disabled"; // You might want to add CSS for this class
 				break;
 			case "silent":
 				this.micStatus.textContent = "🔇 Silent Mode";
 				this.micStatus.className = "silent";
 				break;
-			default:
+			default: // disconnected
 				this.micStatus.textContent = "🔇 No Mic";
 				this.micStatus.className = "";
 		}
@@ -359,11 +363,20 @@ export class Controls {
 
 		// Update microphone status
 		if (audioAnalyzer.isMicrophoneConnected) {
-			this.updateMicrophoneStatus("connected");
-		} else if (audioAnalyzer.isEnabled) {
-			this.updateMicrophoneStatus("silent");
+			if (audioAnalyzer.isEnabled) {
+				this.updateMicrophoneStatus("live");
+			} else {
+				this.updateMicrophoneStatus("disabled");
+			}
 		} else {
-			this.updateMicrophoneStatus("disconnected");
+			// Not connected
+			if (audioAnalyzer.isEnabled) {
+				// Fallback data because enabled but not connected
+				this.updateMicrophoneStatus("silent");
+			} else {
+				// Not connected and not enabled
+				this.updateMicrophoneStatus("disconnected");
+			}
 		}
 
 		// Update audio levels
