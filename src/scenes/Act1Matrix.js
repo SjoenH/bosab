@@ -1,32 +1,40 @@
+/**
+ * Act 1 - Matrix: Data streams and clinical waveforms
+ * 
+ * Creates flowing numbers, clinical waveforms, and data visualization
+ * elements. Represents the digital/data aesthetic of the first act.
+ */
+
 import * as THREE from 'three'
+import { BaseAct } from './BaseAct.js'
 
-export class Act1Matrix {
-    constructor(scene, camera, audioAnalyzer) {
-        this.scene = scene
-        this.camera = camera
-        this.audioAnalyzer = audioAnalyzer
+export class Act1Matrix extends BaseAct {
+    constructor(scene, camera, audioAnalyzer, actNumber) {
+        super(scene, camera, audioAnalyzer, actNumber)
 
-        this.group = new THREE.Group()
+        // Act 1 specific properties
         this.dataStreams = []
         this.waveforms = []
-
-        this.isActive = false
-        this.time = 0
-        this.transitionState = 'idle' // 'idle', 'exiting', 'entering', 'active'
+        this.dataNumbers = []
 
         this.colors = {
             primary: new THREE.Color(0x00ff41),
             secondary: new THREE.Color(0x008f11),
-            accent: new THREE.Color(0xffffff)
+            accent: new THREE.Color(0xffffff),
+            background: new THREE.Color(0x001100)
         }
+
+        console.log(`🔢 Act1Matrix created`)
     }
 
-    init() {
-        this.scene.add(this.group)
+    /**
+     * Create act-specific content - implements BaseAct virtual method
+     */
+    createContent() {
         this.createDataStreams()
         this.createWaveforms()
-
-        console.log('🔢 Act 1 - Matrix initialized')
+        this.createDataNumbers()
+        console.log('🔢 Act 1 - Matrix content created')
     }
 
     createDataStreams() {
@@ -47,20 +55,23 @@ export class Act1Matrix {
 
                 const particle = new THREE.Mesh(geometry, material)
 
-                // Position in columns
+                // Position in columns within act bounds
                 particle.position.x = (col - columns / 2) * 1.5
-                particle.position.y = Math.random() * 40 - 20
+                particle.position.y = (Math.random() - 0.5) * 20
                 particle.position.z = (Math.random() - 0.5) * 10
 
+                // Store initial values for animation
                 particle.userData = {
-                    column: col,
-                    fallSpeed: Math.random() * 0.05 + 0.02,
+                    originalY: particle.position.y,
+                    speed: Math.random() * 0.1 + 0.05,
                     opacity: particle.material.opacity,
-                    phase: Math.random() * Math.PI * 2
+                    phase: Math.random() * Math.PI * 2,
+                    column: col
                 }
 
                 this.group.add(particle)
                 streamParticles.push(particle)
+                this.registerMaterial(material)
             }
 
             this.dataStreams.push(streamParticles)
@@ -69,234 +80,177 @@ export class Act1Matrix {
 
     createWaveforms() {
         // Create simple audio-reactive waveforms
-        for (let i = 0; i < 3; i++) {
+        const waveformCount = 5
+
+        for (let w = 0; w < waveformCount; w++) {
             const points = []
             const segments = 50
 
-            for (let j = 0; j <= segments; j++) {
-                const x = (j / segments) * 20 - 10
-                const y = (i - 1) * 3
-                points.push(new THREE.Vector3(x, y, 0))
+            for (let i = 0; i <= segments; i++) {
+                const x = (i / segments) * 30 - 15
+                const y = w * 4 - 8
+                const z = Math.sin(i * 0.2 + w) * 0.5
+                points.push(new THREE.Vector3(x, y, z))
             }
 
             const geometry = new THREE.BufferGeometry().setFromPoints(points)
             const material = new THREE.LineBasicMaterial({
-                color: this.colors.primary,
+                color: this.colors.secondary,
                 transparent: true,
                 opacity: 0.6
             })
 
-            const line = new THREE.Line(geometry, material)
-            line.position.z = -3
-            line.userData = {
-                originalPoints: [...points],
-                frequency: [0.8, 1.2, 1.6][i] // Different frequencies for each line
+            const waveform = new THREE.Line(geometry, material)
+            waveform.userData = {
+                baseY: w * 4 - 8,
+                phase: w * 0.5,
+                amplitude: 1,
+                originalPoints: points.map(p => p.clone())
             }
 
-            this.group.add(line)
-            this.waveforms.push(line)
+            this.group.add(waveform)
+            this.waveforms.push(waveform)
+            this.registerMaterial(material)
         }
     }
 
-    update(time) {
-        if (!this.isActive) return
+    createDataNumbers() {
+        // Create floating digital numbers that respond to audio
+        // This would typically use TextGeometry but we'll use simple planes for now
+        const numberCount = 50
 
-        this.time = time * 0.001
+        for (let i = 0; i < numberCount; i++) {
+            const geometry = new THREE.PlaneGeometry(0.3, 0.3)
+            const material = new THREE.MeshBasicMaterial({
+                color: this.colors.accent,
+                transparent: true,
+                opacity: Math.random() * 0.7 + 0.3
+            })
 
-        // Update data streams
-        this.updateDataStreams()
+            const numberMesh = new THREE.Mesh(geometry, material)
 
-        // Update waveforms with audio reactivity
-        this.updateWaveforms()
+            // Position randomly within act space
+            numberMesh.position.set(
+                (Math.random() - 0.5) * 35,
+                (Math.random() - 0.5) * 25,
+                (Math.random() - 0.5) * 15
+            )
 
-        // Subtle camera movement
-        this.updateCamera()
+            numberMesh.userData = {
+                originalPosition: numberMesh.position.clone(),
+                driftSpeed: Math.random() * 0.02 + 0.01,
+                phase: Math.random() * Math.PI * 2,
+                number: Math.floor(Math.random() * 10)
+            }
+
+            this.group.add(numberMesh)
+            this.dataNumbers.push(numberMesh)
+            this.registerMaterial(material)
+        }
     }
 
-    updateDataStreams() {
-        const audioVolume = this.audioAnalyzer.getVolume()
-        const audioFreq = this.audioAnalyzer.getAverageFrequency()
-        const beat = this.audioAnalyzer.getBeat()
+    // Act 1 specific overrides and implementations
 
-        this.dataStreams.forEach((stream, columnIndex) => {
-            stream.forEach((particle, particleIndex) => {
+    /**
+     * Act-specific content updates - override BaseAct method
+     */
+    updateContent(time) {
+        this.updateDataStreams(time)
+        this.updateWaveforms(time)
+        this.updateDataNumbers(time)
+    }
+
+    updateDataStreams(time) {
+        // Animate falling data stream particles
+        this.dataStreams.forEach((stream, streamIndex) => {
+            stream.forEach(particle => {
                 const userData = particle.userData
 
-                // Falling effect
-                particle.position.y -= userData.fallSpeed * (1 + audioVolume * 3)
+                // Falling animation
+                particle.position.y -= userData.speed * (1 + this.audioLevel * 2)
 
-                // Reset to top when reaching bottom
-                if (particle.position.y < -25) {
-                    particle.position.y = 25
+                // Reset when off screen
+                if (particle.position.y < -15) {
+                    particle.position.y = 15
                 }
 
-                // Audio-reactive opacity and color
-                const baseOpacity = userData.opacity * (0.3 + Math.sin(this.time + userData.phase) * 0.2)
-                particle.material.opacity = baseOpacity + audioFreq * 0.7
+                // Audio reactivity
+                const bassBoost = this.bassLevel * 0.5
+                particle.material.opacity = userData.opacity * (0.7 + bassBoost)
 
-                // Beat reaction
-                if (beat) {
-                    particle.material.color.setHex(0xffffff)
-                    particle.scale.setScalar(1.5)
-                } else {
-                    particle.material.color.lerp(this.colors.primary, 0.1)
-                    particle.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1)
-                }
+                // Slight phase-based movement
+                particle.position.x += Math.sin(time * 0.001 + userData.phase) * 0.01
             })
         })
     }
 
-    updateWaveforms() {
-        const audioLow = this.audioAnalyzer.getLowFreq()
-        const audioMid = this.audioAnalyzer.getMidFreq()
-        const audioHigh = this.audioAnalyzer.getHighFreq()
-        const beat = this.audioAnalyzer.getBeat()
-
+    updateWaveforms(time) {
+        // Update audio-reactive waveforms
         this.waveforms.forEach((waveform, index) => {
             const userData = waveform.userData
-            const positions = waveform.geometry.attributes.position.array
+            const positions = waveform.geometry.attributes.position
 
-            // Different waveforms react to different frequencies
-            const amplitude = [audioLow, audioMid, audioHigh][index] * 3 + 1
+            // Audio-driven amplitude
+            const audioAmplitude = (this.midLevel + this.trebleLevel) * 0.5
+            userData.amplitude = 1 + audioAmplitude * 3
 
-            for (let i = 0; i < positions.length; i += 3) {
-                const x = positions[i]
-                const originalY = userData.originalPoints[i / 3].y
+            // Update waveform points
+            for (let i = 0; i < userData.originalPoints.length; i++) {
+                const originalPoint = userData.originalPoints[i]
+                const audioOffset = Math.sin(time * 0.002 + userData.phase + i * 0.1) * userData.amplitude
 
-                positions[i + 1] = originalY + Math.sin(this.time * userData.frequency * 5 + x * 0.5) * amplitude
+                positions.setY(i, userData.baseY + audioOffset)
+                positions.setZ(i, originalPoint.z + Math.sin(time * 0.001 + i * 0.05) * 0.2)
             }
 
-            waveform.geometry.attributes.position.needsUpdate = true
+            positions.needsUpdate = true
 
-            // Beat reaction
-            if (beat) {
-                waveform.material.color.setHex(0xffffff)
-                waveform.material.opacity = 1.0
-            } else {
-                waveform.material.color.lerp(this.colors.primary, 0.1)
-                waveform.material.opacity = THREE.MathUtils.lerp(waveform.material.opacity, 0.6, 0.1)
+            // Audio-reactive opacity
+            waveform.material.opacity = 0.6 + this.audioLevel * 0.4
+        })
+    }
+
+    updateDataNumbers(time) {
+        // Animate floating digital numbers
+        this.dataNumbers.forEach(number => {
+            const userData = number.userData
+
+            // Gentle floating motion
+            number.position.y = userData.originalPosition.y +
+                Math.sin(time * 0.001 + userData.phase) * 2
+
+            // Audio-reactive brightness
+            const brightness = 0.5 + this.trebleLevel * 0.5
+            number.material.opacity = userData.originalPosition.y * brightness * 0.7
+
+            // Slight rotation on beat
+            if (this.beatDetected) {
+                number.rotation.z += Math.random() * 0.1 - 0.05
             }
         })
     }
 
-    updateCamera() {
-        // Minimal camera movement
-        const audioVolume = this.audioAnalyzer.getVolume()
-        this.camera.position.x = Math.sin(this.time * 0.3) * 0.5
-        this.camera.position.y = audioVolume * 0.5
-        this.camera.lookAt(0, 0, 0)
-    }
-
-    enter() {
-        this.isActive = true
-        this.transitionState = 'active'
-        this.group.visible = true
-        console.log('🔢 Entering Act 1 - Matrix')
-    }
-
-    exit() {
-        this.isActive = false
-        this.transitionState = 'idle'
-        this.group.visible = false
-        console.log('🔢 Exiting Act 1 - Matrix')
-    }
-
-    // Enhanced transition methods
-    prepareEntry() {
-        this.transitionState = 'entering'
-        this.group.visible = true
-
-        // Position elements off-screen for entry animation
-        this.dataStreams.forEach((stream, columnIndex) => {
-            stream.forEach(particle => {
-                particle.position.y += 50 // Start above screen
-                particle.material.opacity = 0
-            })
-        })
-
-        this.waveforms.forEach(waveform => {
-            waveform.position.x = -50 // Start off left side
-            waveform.material.opacity = 0
-        })
-    }
-
-    startEntry() {
-        this.transitionState = 'entering'
-        this.isActive = true
-    }
-
-    startExit() {
-        this.transitionState = 'exiting'
-    }
-
-    finishExit() {
-        this.group.visible = false
-    }
-
-    updateTransition(progress, direction) {
-        const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
-        const easedProgress = easeInOutQuad(progress)
-
-        if (direction === 'enter') {
-            // Animate data streams falling into place
-            this.dataStreams.forEach((stream, columnIndex) => {
-                stream.forEach((particle, particleIndex) => {
-                    const delay = (columnIndex * 0.1 + particleIndex * 0.02) % 1
-                    const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.8))
-
-                    // Animate Y position from above screen to final position
-                    const targetY = particle.userData.originalY || (Math.random() * 40 - 20)
-                    if (!particle.userData.originalY) particle.userData.originalY = targetY
-
-                    particle.position.y = targetY + (1 - adjustedProgress) * 50
-                    particle.material.opacity = adjustedProgress * particle.userData.opacity
-                })
-            })
-
-            // Animate waveforms sliding in from left
-            this.waveforms.forEach((waveform, index) => {
-                const delay = index * 0.1
-                const adjustedProgress = Math.max(0, Math.min(1, (easedProgress - delay) / 0.7))
-
-                waveform.position.x = -50 + adjustedProgress * 50
-                waveform.material.opacity = adjustedProgress * 0.6
-            })
-
-        } else if (direction === 'exit') {
-            // Animate elements flowing away
-            this.dataStreams.forEach((stream, columnIndex) => {
+    /**
+     * Act-specific entry animation
+     */
+    onEnter() {
+        // Stagger the appearance of data streams
+        this.dataStreams.forEach((stream, streamIndex) => {
+            setTimeout(() => {
                 stream.forEach(particle => {
-                    // Accelerate downward and fade
-                    particle.position.y -= easedProgress * 10
-                    particle.material.opacity *= (1 - easedProgress * 0.8)
+                    particle.visible = true
                 })
-            })
-
-            this.waveforms.forEach(waveform => {
-                // Slide out to the right
-                waveform.position.x = easedProgress * 50
-                waveform.material.opacity = (1 - easedProgress) * 0.6
-            })
-        }
+            }, streamIndex * 50)
+        })
     }
 
-    updateBackground(time) {
-        if (this.isActive) return
-        this.time = time * 0.001
-    }
-
-    dispose() {
-        // Clean up geometries and materials
+    /**
+     * Act-specific exit animation
+     */
+    onExit() {
+        // Fade out all elements
         this.dataStreams.flat().forEach(particle => {
-            particle.geometry.dispose()
-            particle.material.dispose()
+            particle.material.opacity *= 0.5
         })
-
-        this.waveforms.forEach(waveform => {
-            waveform.geometry.dispose()
-            waveform.material.dispose()
-        })
-
-        this.scene.remove(this.group)
     }
 }

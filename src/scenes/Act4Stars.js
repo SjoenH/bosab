@@ -1,34 +1,43 @@
+/**
+ * Act 4 - Stars: Expanding starfield, meditative drift, and cosmic wonder
+ * 
+ * Creates peaceful starfield, cosmic dust, and gentle galaxy rotation.
+ * Represents the final cosmic/transcendent act.
+ */
+
 import * as THREE from 'three'
+import { BaseAct } from './BaseAct.js'
 
-export class Act4Stars {
-    constructor(scene, camera, audioAnalyzer) {
-        this.scene = scene
-        this.camera = camera
-        this.audioAnalyzer = audioAnalyzer
+export class Act4Stars extends BaseAct {
+    constructor(scene, camera, audioAnalyzer, actNumber) {
+        super(scene, camera, audioAnalyzer, actNumber)
 
-        this.group = new THREE.Group()
+        // Act 4 specific properties
         this.starfield = null
         this.cosmicDust = null
         this.milkyWay = null
-
-        this.isActive = false
-        this.time = 0
-        this.transitionState = 'idle'
+        this.nebulaClouds = []
 
         this.colors = {
             star: new THREE.Color(0xffffff),
             bluestar: new THREE.Color(0x4488ff),
-            dust: new THREE.Color(0x8899bb)
+            dust: new THREE.Color(0x8899bb),
+            nebula: new THREE.Color(0x9966ff),
+            cosmic: new THREE.Color(0xffaa66)
         }
+
+        console.log(`✨ Act4Stars created`)
     }
 
-    init() {
-        this.scene.add(this.group)
+    /**
+     * Create act-specific content - implements BaseAct virtual method
+     */
+    createContent() {
         this.createStarfield()
         this.createMilkyWay()
         this.createCosmicDust()
-
-        console.log('✨ Act 4 - Stars initialized')
+        this.createNebulaClouds()
+        console.log('✨ Act 4 - Stars content created')
     }
 
     createStarfield() {
@@ -39,15 +48,20 @@ export class Act4Stars {
         const colors = new Float32Array(starCount * 3)
         const sizes = new Float32Array(starCount)
 
-        for (let i = 0; i < starCount; i++) {
-            // Spherical distribution
-            const radius = 100 + Math.random() * 300 // Slightly closer
-            const theta = Math.random() * Math.PI * 2
-            const phi = Math.acos(2 * Math.random() - 1)
+        const bounds = this.getBounds()
+        const centerX = (bounds.min.x + bounds.max.x) / 2
 
-            positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
-            positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta)
-            positions[i * 3 + 2] = radius * Math.cos(phi)
+        for (let i = 0; i < starCount; i++) {
+            // Position stars in front of the camera for a starfield effect
+            // Camera looks from (75, 0, -15) toward (75, 0, 0)
+            const radius = 50 + Math.random() * 150 // Distance from center
+            const theta = Math.random() * Math.PI * 2 // Horizontal angle
+            const phi = Math.random() * Math.PI // Vertical angle
+
+            // Position stars in a hemisphere facing the camera
+            positions[i * 3] = centerX + (Math.random() - 0.5) * 30 // Spread across X
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 60 // Spread across Y
+            positions[i * 3 + 2] = Math.random() * 80 + 10 // Stars are in front of center (positive Z)
 
             // Warmer, softer star colors - more golden whites and warm blues
             if (Math.random() < 0.8) {
@@ -74,10 +88,12 @@ export class Act4Stars {
             vertexColors: true,
             blending: THREE.AdditiveBlending,
             sizeAttenuation: true, // Makes stars round and size-based on distance
-            alphaTest: 0.1 // Helps with round appearance
+            alphaTest: 0.1, // Helps with round appearance
+            map: this.createCircularTexture() // Add circular texture for round stars
         })
 
         this.starfield = new THREE.Points(geometry, material)
+        this.registerMaterial(material)
         this.group.add(this.starfield)
     }
 
@@ -89,31 +105,22 @@ export class Act4Stars {
         const colors = new Float32Array(milkyWayCount * 3)
         const sizes = new Float32Array(milkyWayCount)
 
+        const bounds = this.getBounds()
+        const centerX = (bounds.min.x + bounds.max.x) / 2
+
         for (let i = 0; i < milkyWayCount; i++) {
-            // Create a diagonal band across the sky - more visible distribution
+            // Create a diagonal band across the sky
             const t = i / milkyWayCount
 
-            // Create a diagonal band from one corner to another
-            const bandAngle = Math.PI * 0.25 // 45 degree angle
-            const bandWidth = 0.6 // Wider band for visibility
+            // Create a diagonal band with some curvature
+            const bandProgress = t * Math.PI * 4 // Multiple bands for richness
+            const bandHeight = Math.sin(bandProgress * 0.5) * 15 // Curved band
+            const bandOffset = (Math.random() - 0.5) * 8
 
-            // Main band progression
-            const bandProgress = t * Math.PI * 2
-            const bandOffset = (Math.random() - 0.5) * bandWidth
-
-            // Calculate position along the band
-            const theta = bandProgress
-            const phi = Math.PI * 0.5 + bandOffset + Math.sin(bandProgress * 3) * 0.2
-
-            // Add clustering for realistic appearance
-            const cluster = Math.sin(bandProgress * 8) * 0.1
-            const finalPhi = phi + cluster
-
-            const radius = 120 + Math.random() * 200
-
-            positions[i * 3] = radius * Math.sin(finalPhi) * Math.cos(theta)
-            positions[i * 3 + 1] = radius * Math.sin(finalPhi) * Math.sin(theta)
-            positions[i * 3 + 2] = radius * Math.cos(finalPhi)
+            // Position stars in the Milky Way band
+            positions[i * 3] = centerX + (t - 0.5) * 40 + bandOffset // Along X axis
+            positions[i * 3 + 1] = bandHeight + (Math.random() - 0.5) * 8 // Band height variation
+            positions[i * 3 + 2] = 20 + Math.random() * 60 // In front of camera
 
             // Dense core colors - warm whites, blues, and subtle purples
             const colorVariation = Math.random()
@@ -149,10 +156,12 @@ export class Act4Stars {
             vertexColors: true,
             blending: THREE.AdditiveBlending,
             sizeAttenuation: true, // Makes Milky Way stars round
-            alphaTest: 0.1
+            alphaTest: 0.1,
+            map: this.createCircularTexture() // Add circular texture for round stars
         })
 
         this.milkyWay = new THREE.Points(geometry, material)
+        this.registerMaterial(material)
         this.group.add(this.milkyWay)
     }
 
@@ -164,9 +173,11 @@ export class Act4Stars {
         const velocities = new Float32Array(dustCount * 3)
 
         for (let i = 0; i < dustCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 150 // Closer distribution
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 150
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 150
+            // Position within act bounds, but in front of camera
+            const bounds = this.getBounds()
+            positions[i * 3] = bounds.min.x + Math.random() * (bounds.max.x - bounds.min.x)
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 50
+            positions[i * 3 + 2] = Math.random() * 80 + 5 // In front of camera
 
             // Much slower, more peaceful velocities
             velocities[i * 3] = (Math.random() - 0.5) * 0.008
@@ -184,87 +195,95 @@ export class Act4Stars {
             opacity: 0.4, // More visible for gentle presence
             blending: THREE.AdditiveBlending,
             sizeAttenuation: true, // Round particles
-            alphaTest: 0.1
+            alphaTest: 0.1,
+            map: this.createCircularTexture() // Add circular texture for round particles
         })
 
         this.cosmicDust = new THREE.Points(geometry, material)
+        this.registerMaterial(material)
         this.group.add(this.cosmicDust)
     }
 
-    update(deltaTime) {
-        if (!this.isActive) return
+    createNebulaClouds() {
+        // Create soft nebula clouds
+        const cloudCount = 8
+        for (let i = 0; i < cloudCount; i++) {
+            const geometry = new THREE.SphereGeometry(10 + Math.random() * 20, 16, 16)
+            const material = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(0.7 + Math.random() * 0.3, 0.6, 0.3),
+                transparent: true,
+                opacity: 0.1,
+                wireframe: false
+            })
 
-        this.time += deltaTime
+            const nebula = new THREE.Mesh(geometry, material)
+            const bounds = this.getBounds()
+            nebula.position.set(
+                bounds.min.x + Math.random() * (bounds.max.x - bounds.min.x),
+                (Math.random() - 0.5) * 40,
+                20 + Math.random() * 60 // Position nebula clouds in front of camera
+            )
 
+            this.nebulaClouds.push(nebula)
+            this.registerMaterial(material)
+            this.group.add(nebula)
+        }
+    }
+
+    /**
+     * Act-specific content update - implements BaseAct virtual method
+     */
+    updateContent(time, deltaTime) {
         this.updateStarfield(deltaTime)
         this.updateMilkyWay()
         this.updateCosmicDust()
-        this.updateCamera()
+        this.updateNebulaClouds(deltaTime)
     }
 
     updateStarfield(deltaTime) {
-        const audioIntensity = this.audioAnalyzer.getAverageFrequency()
-        const beat = this.audioAnalyzer.getBeat()
-
         if (!this.starfield) return
 
         // More noticeable twinkling effect
-        this.starfield.material.opacity = 0.7 + audioIntensity * 0.3
+        this.starfield.material.opacity = 0.7 + this.audioLevel * 0.3
 
         // More visible beat reaction
-        if (beat) {
+        if (this.beatDetected) {
             this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 1.0, 0.05)
         } else {
             this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 0.8, 0.02)
         }
-
-        // No rotation - stars remain perfectly still
     }
 
     updateMilkyWay() {
-        const audioLow = this.audioAnalyzer.getLowFreq()
-
         if (!this.milkyWay) return
 
         // More visible galactic dust movement
-        this.milkyWay.material.opacity = 0.6 + audioLow * 0.2
+        this.milkyWay.material.opacity = 0.6 + this.bassLevel * 0.2
     }
 
     updateCosmicDust() {
-        const audioMid = this.audioAnalyzer.getMidFreq()
-
         if (!this.cosmicDust) return
 
         // More visible twinkling effect for cosmic dust
-        this.cosmicDust.material.opacity = 0.3 + audioMid * 0.15
+        this.cosmicDust.material.opacity = 0.3 + this.midLevel * 0.15
     }
 
-    updateCamera() {
-        // No camera movement - perfectly still for complete meditation
-        // Camera stays at origin looking at center
-        this.camera.position.set(0, 0, 0)
-        this.camera.lookAt(0, 0, 0)
+    updateNebulaClouds(deltaTime) {
+        this.nebulaClouds.forEach((nebula, index) => {
+            // Gentle floating motion
+            nebula.position.y += Math.sin(this.time + index) * 0.01
+            nebula.rotation.y += deltaTime * 0.1
+
+            // Subtle audio reaction
+            const scale = 1 + this.audioLevel * 0.1
+            nebula.scale.setScalar(scale)
+        })
     }
 
-    enter() {
-        this.isActive = true
-        this.transitionState = 'active'
-        this.group.visible = true
-        console.log('✨ Entering Act 4 - Stars')
-    }
-
-    exit() {
-        this.isActive = false
-        this.transitionState = 'idle'
-        this.group.visible = false
-        console.log('✨ Exiting Act 4 - Stars')
-    }
-
-    // Enhanced transition methods
-    prepareEntry() {
-        this.transitionState = 'entering'
-        this.group.visible = true
-
+    /**
+     * Prepare for entry transition - implements BaseAct method
+     */
+    onPrepareEntry() {
         // Start stars collapsed at center
         if (this.starfield) {
             const positions = this.starfield.geometry.attributes.position.array
@@ -274,7 +293,6 @@ export class Act4Stars {
                 positions[i + 2] *= 0.01
             }
             this.starfield.geometry.attributes.position.needsUpdate = true
-            this.starfield.material.opacity = 0
         }
 
         // Start cosmic dust concentrated
@@ -286,90 +304,51 @@ export class Act4Stars {
                 positions[i + 2] *= 0.1
             }
             this.cosmicDust.geometry.attributes.position.needsUpdate = true
-            this.cosmicDust.material.opacity = 0
         }
 
-        // Start Milky Way faded
-        if (this.milkyWay) {
-            this.milkyWay.material.opacity = 0
-        }
+        // Store original positions for expansion animation
+        this.storeOriginalPositions()
     }
 
-    startEntry() {
-        this.transitionState = 'entering'
-        this.isActive = true
-    }
-
-    startExit() {
-        this.transitionState = 'exiting'
-    }
-
-    finishExit() {
-        this.group.visible = false
-    }
-
-    updateTransition(progress, direction) {
+    /**
+     * Handle transition updates - implements BaseAct method
+     */
+    onUpdateTransition(progress, direction) {
         const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
         const easedProgress = easeInOutQuad(progress)
 
         if (direction === 'enter') {
             // Animate stars expanding from center like big bang
-            if (this.starfield) {
+            if (this.starfield && this.starfield.userData.originalPositions) {
                 const positions = this.starfield.geometry.attributes.position.array
                 const targetPositions = this.starfield.userData.originalPositions
 
-                if (!targetPositions) {
-                    // Store original positions
-                    this.starfield.userData.originalPositions = new Float32Array(positions.length)
-                    for (let i = 0; i < positions.length; i++) {
-                        this.starfield.userData.originalPositions[i] = positions[i] / 0.01 // Undo initial collapse
-                    }
-                }
-
                 // Expand from center
                 for (let i = 0; i < positions.length; i += 3) {
-                    const targetX = this.starfield.userData.originalPositions[i]
-                    const targetY = this.starfield.userData.originalPositions[i + 1]
-                    const targetZ = this.starfield.userData.originalPositions[i + 2]
-
-                    positions[i] = targetX * easedProgress
-                    positions[i + 1] = targetY * easedProgress
-                    positions[i + 2] = targetZ * easedProgress
+                    positions[i] = targetPositions[i] * easedProgress
+                    positions[i + 1] = targetPositions[i + 1] * easedProgress
+                    positions[i + 2] = targetPositions[i + 2] * easedProgress
                 }
                 this.starfield.geometry.attributes.position.needsUpdate = true
-                this.starfield.material.opacity = easedProgress * 0.8
             }
 
             // Animate cosmic dust spreading out
-            if (this.cosmicDust) {
+            if (this.cosmicDust && this.cosmicDust.userData.originalPositions) {
                 const positions = this.cosmicDust.geometry.attributes.position.array
                 const targetPositions = this.cosmicDust.userData.originalPositions
 
-                if (!targetPositions) {
-                    // Store original positions
-                    this.cosmicDust.userData.originalPositions = new Float32Array(positions.length)
-                    for (let i = 0; i < positions.length; i++) {
-                        this.cosmicDust.userData.originalPositions[i] = positions[i] / 0.1
-                    }
-                }
-
                 for (let i = 0; i < positions.length; i += 3) {
-                    const targetX = this.cosmicDust.userData.originalPositions[i]
-                    const targetY = this.cosmicDust.userData.originalPositions[i + 1]
-                    const targetZ = this.cosmicDust.userData.originalPositions[i + 2]
-
-                    positions[i] = targetX * easedProgress
-                    positions[i + 1] = targetY * easedProgress
-                    positions[i + 2] = targetZ * easedProgress
+                    positions[i] = targetPositions[i] * easedProgress
+                    positions[i + 1] = targetPositions[i + 1] * easedProgress
+                    positions[i + 2] = targetPositions[i + 2] * easedProgress
                 }
                 this.cosmicDust.geometry.attributes.position.needsUpdate = true
-                this.cosmicDust.material.opacity = easedProgress * 0.3
             }
 
-            // Animate Milky Way appearing
-            if (this.milkyWay) {
-                this.milkyWay.material.opacity = easedProgress * 0.6
-            }
+            // Nebula clouds fade in
+            this.nebulaClouds.forEach(nebula => {
+                nebula.material.opacity = easedProgress * 0.1
+            })
 
         } else if (direction === 'exit') {
             // Animate stars drifting away and fading
@@ -383,42 +362,56 @@ export class Act4Stars {
                     positions[i + 2] *= (1 + easedProgress * 0.5)
                 }
                 this.starfield.geometry.attributes.position.needsUpdate = true
-                this.starfield.material.opacity = (1 - easedProgress) * 0.8
             }
 
-            // Cosmic dust disperses
-            if (this.cosmicDust) {
-                this.cosmicDust.material.opacity = (1 - easedProgress) * 0.3
-            }
-
-            // Milky Way fades out
-            if (this.milkyWay) {
-                this.milkyWay.material.opacity = (1 - easedProgress) * 0.6
-            }
+            // Nebula clouds fade out
+            this.nebulaClouds.forEach(nebula => {
+                nebula.material.opacity = (1 - easedProgress) * 0.1
+            })
         }
     }
 
-    updateBackground(deltaTime) {
-        if (this.isActive) return
-        this.time += deltaTime * 0.1
-    }
-
-    dispose() {
+    /**
+     * Store original positions for transition animations
+     */
+    storeOriginalPositions() {
         if (this.starfield) {
-            this.starfield.geometry.dispose()
-            this.starfield.material.dispose()
+            const positions = this.starfield.geometry.attributes.position.array
+            this.starfield.userData.originalPositions = new Float32Array(positions.length)
+            for (let i = 0; i < positions.length; i++) {
+                this.starfield.userData.originalPositions[i] = positions[i] / 0.01 // Undo initial collapse
+            }
         }
 
         if (this.cosmicDust) {
-            this.cosmicDust.geometry.dispose()
-            this.cosmicDust.material.dispose()
+            const positions = this.cosmicDust.geometry.attributes.position.array
+            this.cosmicDust.userData.originalPositions = new Float32Array(positions.length)
+            for (let i = 0; i < positions.length; i++) {
+                this.cosmicDust.userData.originalPositions[i] = positions[i] / 0.1
+            }
         }
+    }
 
-        if (this.milkyWay) {
-            this.milkyWay.geometry.dispose()
-            this.milkyWay.material.dispose()
-        }
+    /**
+     * Create a circular texture for round star particles
+     */
+    createCircularTexture() {
+        const canvas = document.createElement('canvas')
+        canvas.width = 32
+        canvas.height = 32
+        const ctx = canvas.getContext('2d')
 
-        this.scene.remove(this.group)
+        // Create gradient for soft circular star
+        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16)
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)')
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
+
+        ctx.fillStyle = gradient
+        ctx.fillRect(0, 0, 32, 32)
+
+        const texture = new THREE.CanvasTexture(canvas)
+        texture.needsUpdate = true
+        return texture
     }
 }

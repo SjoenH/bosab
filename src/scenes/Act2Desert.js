@@ -1,32 +1,40 @@
+/**
+ * Act 2 - Desert: Shifting sand landscapes and heartbeat-driven terrain
+ * 
+ * Creates flowing sand dunes, wind particles, and terrain that responds
+ * to heartbeat rhythms. Represents the desert/organic transition.
+ */
+
 import * as THREE from 'three'
+import { BaseAct } from './BaseAct.js'
 
-export class Act2Desert {
-    constructor(scene, camera, audioAnalyzer) {
-        this.scene = scene
-        this.camera = camera
-        this.audioAnalyzer = audioAnalyzer
+export class Act2Desert extends BaseAct {
+    constructor(scene, camera, audioAnalyzer, actNumber) {
+        super(scene, camera, audioAnalyzer, actNumber)
 
-        this.group = new THREE.Group()
+        // Act 2 specific properties
         this.terrainWaves = []
-        this.sandParticles = null
-
-        this.isActive = false
-        this.time = 0
-        this.transitionState = 'idle'
+        this.sandParticles = []
+        this.windStreams = []
 
         this.colors = {
             sand: new THREE.Color(0xd4a574),
             darkSand: new THREE.Color(0x8b5a2b),
-            wind: new THREE.Color(0xf5e6d3)
+            wind: new THREE.Color(0xf5e6d3),
+            sunset: new THREE.Color(0xff7f50)
         }
+
+        console.log(`🏜️ Act2Desert created`)
     }
 
-    init() {
-        this.scene.add(this.group)
+    /**
+     * Create act-specific content - implements BaseAct virtual method
+     */
+    createContent() {
         this.createTerrainWaves()
         this.createSandParticles()
-
-        console.log('🏜️ Act 2 - Desert initialized')
+        this.createWindStreams()
+        console.log('🏜️ Act 2 - Desert content created')
     }
 
     createTerrainWaves() {
@@ -61,6 +69,7 @@ export class Act2Desert {
 
             this.group.add(wave)
             this.terrainWaves.push(wave)
+            this.registerMaterial(material)
         }
     }
 
@@ -74,9 +83,9 @@ export class Act2Desert {
         for (let i = 0; i < particleCount; i++) {
             const i3 = i * 3
 
-            positions[i3] = (Math.random() - 0.5) * 60     // x
+            positions[i3] = (Math.random() - 0.5) * 40     // x - constrain to act space
             positions[i3 + 1] = Math.random() * 15         // y  
-            positions[i3 + 2] = (Math.random() - 0.5) * 60 // z
+            positions[i3 + 2] = (Math.random() - 0.5) * 15 // z - constrain to act space
 
             velocities[i3] = Math.random() * 0.02          // x velocity
             velocities[i3 + 1] = Math.random() * 0.01      // y velocity
@@ -94,27 +103,62 @@ export class Act2Desert {
             blending: THREE.AdditiveBlending
         })
 
-        this.sandParticles = new THREE.Points(geometry, material)
-        this.group.add(this.sandParticles)
+        const sandSystem = new THREE.Points(geometry, material)
+        this.group.add(sandSystem)
+        this.sandParticles.push(sandSystem)
+        this.registerMaterial(material)
     }
 
-    update(time) {
-        if (!this.isActive) return
+    createWindStreams() {
+        // Create flowing wind lines
+        const streamCount = 12
 
-        this.time = time * 0.001
+        for (let s = 0; s < streamCount; s++) {
+            const points = []
+            const length = 30
 
-        this.updateTerrainWaves()
-        this.updateSandParticles()
-        this.updateCamera()
+            for (let i = 0; i <= length; i++) {
+                const x = (i / length) * 35 - 17.5
+                const y = (s - streamCount / 2) * 2 + Math.sin(i * 0.1 + s) * 1
+                const z = Math.sin(i * 0.05 + s * 0.5) * 2
+                points.push(new THREE.Vector3(x, y, z))
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points)
+            const material = new THREE.LineBasicMaterial({
+                color: this.colors.wind,
+                transparent: true,
+                opacity: 0.3
+            })
+
+            const stream = new THREE.Line(geometry, material)
+            stream.userData = {
+                originalPoints: points.map(p => p.clone()),
+                streamIndex: s,
+                phase: s * 0.3,
+                speed: 0.5 + Math.random() * 0.5
+            }
+
+            this.group.add(stream)
+            this.windStreams.push(stream)
+            this.registerMaterial(material)
+        }
     }
 
-    updateTerrainWaves() {
-        const audioLow = this.audioAnalyzer.getLowFreq()
-        const audioVolume = this.audioAnalyzer.getVolume()
-        const beat = this.audioAnalyzer.getBeat()
+    // Act 2 specific overrides and implementations
 
+    /**
+     * Act-specific content updates - override BaseAct method
+     */
+    updateContent(time) {
+        this.updateTerrainWaves(time)
+        this.updateSandParticles(time)
+        this.updateWindStreams(time)
+    }
+
+    updateTerrainWaves(time) {
         // Heartbeat pattern for desert breathing
-        const heartbeat = beat ? 1.0 : Math.sin(this.time * 1.2) * 0.3 + 0.3
+        const heartbeat = this.beatDetected ? 1.0 : Math.sin(time * 0.0012) * 0.3 + 0.3
 
         this.terrainWaves.forEach((wave, index) => {
             const userData = wave.userData
@@ -125,8 +169,8 @@ export class Act2Desert {
                 const originalPoint = userData.originalPoints[i / 3]
 
                 // Wave movement with heartbeat and audio influence
-                const waveOffset = Math.sin(this.time * 2 + x * 0.3 + userData.phase) * (1 + audioLow * 2)
-                const heartbeatOffset = Math.sin(this.time * 3 + x * 0.1) * heartbeat * 2
+                const waveOffset = Math.sin(time * 0.002 + x * 0.3 + userData.phase) * (1 + this.bassLevel * 2)
+                const heartbeatOffset = Math.sin(time * 0.003 + x * 0.1) * heartbeat * 2
 
                 positions[i + 2] = originalPoint.z + waveOffset * 0.5 + heartbeatOffset
             }
@@ -134,7 +178,7 @@ export class Act2Desert {
             wave.geometry.attributes.position.needsUpdate = true
 
             // Beat reaction
-            if (beat) {
+            if (this.beatDetected) {
                 wave.material.color.lerp(this.colors.wind, 0.3)
             } else {
                 wave.material.color.lerp(this.colors.sand, 0.1)
@@ -142,62 +186,57 @@ export class Act2Desert {
         })
     }
 
-    updateSandParticles() {
-        const audioVolume = this.audioAnalyzer.getVolume()
-        const audioMid = this.audioAnalyzer.getMidFreq()
+    updateSandParticles(time) {
+        this.sandParticles.forEach(sandSystem => {
+            const positions = sandSystem.geometry.attributes.position.array
+            const velocities = sandSystem.geometry.attributes.velocity.array
 
-        if (!this.sandParticles) return
+            for (let i = 0; i < positions.length; i += 3) {
+                // Apply wind movement with audio influence
+                positions[i] += velocities[i] * (1 + this.midLevel * 3)
+                positions[i + 1] += velocities[i + 1] * (1 + this.audioLevel * 2)
+                positions[i + 2] += velocities[i + 2] * (1 + this.midLevel * 2)
 
-        const positions = this.sandParticles.geometry.attributes.position.array
-        const velocities = this.sandParticles.geometry.attributes.velocity.array
+                // Wrap around within act bounds
+                if (positions[i] > 20) positions[i] = -20
+                if (positions[i] < -20) positions[i] = 20
+                if (positions[i + 1] > 15) positions[i + 1] = 0
+                if (positions[i + 2] > 7) positions[i + 2] = -7
+                if (positions[i + 2] < -7) positions[i + 2] = 7
+            }
 
-        for (let i = 0; i < positions.length; i += 3) {
-            // Apply wind movement
-            positions[i] += velocities[i] * (1 + audioMid * 3)
-            positions[i + 1] += velocities[i + 1] * (1 + audioVolume * 2)
-            positions[i + 2] += velocities[i + 2] * (1 + audioMid * 2)
-
-            // Wrap around
-            if (positions[i] > 30) positions[i] = -30
-            if (positions[i] < -30) positions[i] = 30
-            if (positions[i + 1] > 20) positions[i + 1] = 0
-            if (positions[i + 2] > 30) positions[i + 2] = -30
-            if (positions[i + 2] < -30) positions[i + 2] = 30
-        }
-
-        this.sandParticles.geometry.attributes.position.needsUpdate = true
-        this.sandParticles.material.opacity = 0.3 + audioVolume * 0.4
+            sandSystem.geometry.attributes.position.needsUpdate = true
+            sandSystem.material.opacity = 0.3 + this.audioLevel * 0.4
+        })
     }
 
-    updateCamera() {
-        // Breathing-like camera movement
-        const audioVolume = this.audioAnalyzer.getVolume()
-        const breathing = Math.sin(this.time * 0.5) * 0.5
+    updateWindStreams(time) {
+        this.windStreams.forEach(stream => {
+            const userData = stream.userData
+            const positions = stream.geometry.attributes.position.array
 
-        this.camera.position.y = 5 + breathing + audioVolume * 2
-        this.camera.position.z = 15 + Math.sin(this.time * 0.3) * 1
-        this.camera.lookAt(0, 0, 0)
+            for (let i = 0; i < positions.length; i += 3) {
+                const originalPoint = userData.originalPoints[i / 3]
+
+                // Wind flow animation
+                const windOffset = Math.sin(time * 0.001 * userData.speed + userData.phase + i * 0.05) *
+                    (0.5 + this.trebleLevel * 1.5)
+
+                positions[i + 1] = originalPoint.y + windOffset
+                positions[i + 2] = originalPoint.z + Math.sin(time * 0.0008 + i * 0.02) * 0.5
+            }
+
+            stream.geometry.attributes.position.needsUpdate = true
+
+            // Audio reactivity
+            stream.material.opacity = 0.3 + this.audioLevel * 0.4
+        })
     }
 
-    enter() {
-        this.isActive = true
-        this.transitionState = 'active'
-        this.group.visible = true
-        console.log('🏜️ Entering Act 2 - Desert')
-    }
-
-    exit() {
-        this.isActive = false
-        this.transitionState = 'idle'
-        this.group.visible = false
-        console.log('🏜️ Exiting Act 2 - Desert')
-    }
-
-    // Enhanced transition methods
-    prepareEntry() {
-        this.transitionState = 'entering'
-        this.group.visible = true
-
+    /**
+     * Act-specific entry animation
+     */
+    onPrepareEntry() {
         // Position terrain waves off-screen for entry
         this.terrainWaves.forEach((wave, index) => {
             wave.position.z = -20 // Start behind camera
@@ -205,32 +244,22 @@ export class Act2Desert {
         })
 
         // Start sand particles scattered
-        if (this.sandParticles) {
-            const positions = this.sandParticles.geometry.attributes.position.array
+        this.sandParticles.forEach(sandSystem => {
+            const positions = sandSystem.geometry.attributes.position.array
             for (let i = 0; i < positions.length; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 200 // Wider spread initially
-                positions[i + 1] = Math.random() * 50 + 20 // Higher up
-                positions[i + 2] = (Math.random() - 0.5) * 200
+                positions[i] = (Math.random() - 0.5) * 100 // Wider spread initially
+                positions[i + 1] = Math.random() * 30 + 20 // Higher up
+                positions[i + 2] = (Math.random() - 0.5) * 100
             }
-            this.sandParticles.geometry.attributes.position.needsUpdate = true
-            this.sandParticles.material.opacity = 0
-        }
+            sandSystem.geometry.attributes.position.needsUpdate = true
+            sandSystem.material.opacity = 0
+        })
     }
 
-    startEntry() {
-        this.transitionState = 'entering'
-        this.isActive = true
-    }
-
-    startExit() {
-        this.transitionState = 'exiting'
-    }
-
-    finishExit() {
-        this.group.visible = false
-    }
-
-    updateTransition(progress, direction) {
+    /**
+     * Act-specific transition updates
+     */
+    onUpdateTransition(progress, direction) {
         const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
         const easedProgress = easeInOutQuad(progress)
 
@@ -246,22 +275,22 @@ export class Act2Desert {
             })
 
             // Animate sand particles settling
-            if (this.sandParticles) {
+            this.sandParticles.forEach(sandSystem => {
                 const targetOpacity = 0.4
-                this.sandParticles.material.opacity = easedProgress * targetOpacity
+                sandSystem.material.opacity = easedProgress * targetOpacity
 
                 // Gradually settle particles into normal range
-                const positions = this.sandParticles.geometry.attributes.position.array
+                const positions = sandSystem.geometry.attributes.position.array
                 for (let i = 0; i < positions.length; i += 3) {
-                    if (Math.abs(positions[i]) > 60) {
+                    if (Math.abs(positions[i]) > 30) {
                         positions[i] *= (1 - easedProgress * 0.1) // Gradually pull in
                     }
                     if (positions[i + 1] > 15) {
                         positions[i + 1] *= (1 - easedProgress * 0.05) // Settle down
                     }
                 }
-                this.sandParticles.geometry.attributes.position.needsUpdate = true
-            }
+                sandSystem.geometry.attributes.position.needsUpdate = true
+            })
 
         } else if (direction === 'exit') {
             // Animate terrain dissolving away
@@ -272,11 +301,11 @@ export class Act2Desert {
             })
 
             // Blow sand particles away
-            if (this.sandParticles) {
-                this.sandParticles.material.opacity = (1 - easedProgress) * 0.4
+            this.sandParticles.forEach(sandSystem => {
+                sandSystem.material.opacity = (1 - easedProgress) * 0.4
 
-                const positions = this.sandParticles.geometry.attributes.position.array
-                const velocities = this.sandParticles.geometry.attributes.velocity.array
+                const positions = sandSystem.geometry.attributes.position.array
+                const velocities = sandSystem.geometry.attributes.velocity.array
 
                 for (let i = 0; i < positions.length; i += 3) {
                     // Accelerate particles away
@@ -284,27 +313,8 @@ export class Act2Desert {
                     positions[i + 1] += velocities[i + 1] * easedProgress * 10 + easedProgress * 5 // Lift up
                     positions[i + 2] += velocities[i + 2] * easedProgress * 20
                 }
-                this.sandParticles.geometry.attributes.position.needsUpdate = true
-            }
+                sandSystem.geometry.attributes.position.needsUpdate = true
+            })
         }
-    }
-
-    updateBackground(time) {
-        if (this.isActive) return
-        this.time = time * 0.001
-    }
-
-    dispose() {
-        this.terrainWaves.forEach(wave => {
-            wave.geometry.dispose()
-            wave.material.dispose()
-        })
-
-        if (this.sandParticles) {
-            this.sandParticles.geometry.dispose()
-            this.sandParticles.material.dispose()
-        }
-
-        this.scene.remove(this.group)
     }
 }

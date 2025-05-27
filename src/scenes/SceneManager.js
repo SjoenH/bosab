@@ -2,6 +2,8 @@ import { Act1Matrix } from './Act1Matrix.js'
 import { Act2Desert } from './Act2Desert.js'
 import { Act3Human } from './Act3Human.js'
 import { Act4Stars } from './Act4Stars.js'
+import { CameraController } from '../controls/CameraController.js'
+import { LAYOUT_CONFIG, LayoutHelper } from '../config/LayoutConfig.js'
 
 export class SceneManager {
     constructor(scene, camera, audioAnalyzer) {
@@ -9,22 +11,25 @@ export class SceneManager {
         this.camera = camera
         this.audioAnalyzer = audioAnalyzer
 
+        // Camera controller for smooth navigation
+        this.cameraController = new CameraController(camera)
+
         this.acts = {}
         this.currentAct = null
         this.currentActNumber = 1
         this.transitionProgress = 0
         this.isTransitioning = false
-        this.transitionDuration = 3000 // 3 seconds
+        this.transitionDuration = LAYOUT_CONFIG.camera.transitionDuration
         this.transitionStartTime = 0
 
         // Transition state management
         this.previousAct = null
         this.nextAct = null
-        this.transitionPhase = 'idle' // 'fade-out', 'transition', 'fade-in', 'idle'
+        this.transitionPhase = 'idle' // 'preparing', 'camera-moving', 'content-transitioning', 'complete'
 
-        // Enhanced transition system
-        this.transitionType = 'smooth' // 'fade', 'smooth'
-        this.allowOverlap = true // Allow both acts to be visible during transition
+        // Navigation mode
+        this.navigationMode = 'camera' // 'camera' or 'fade'
+        this.allowOverlap = false // Camera navigation doesn't need overlap
 
         // Demo mode configuration
         this.demoMode = false
@@ -35,24 +40,59 @@ export class SceneManager {
         this.performanceActDuration = 6.25 * 60 * 1000 // 6.25 minutes for performance
         this.demoActDuration = 5000 // 5 seconds per act in demo
         this.demoTransitionDuration = 3000 // 3 seconds transitions in demo
+
+        // Camera controller callbacks
+        this.setupCameraCallbacks()
+
+        console.log('🎭 SceneManager initialized with camera navigation')
+    }
+
+    /**
+     * Setup camera controller callbacks
+     */
+    setupCameraCallbacks() {
+        this.cameraController.onTransitionStart = (actNumber) => {
+            console.log(`🎭 Camera transition started to Act ${actNumber}`)
+        }
+
+        this.cameraController.onTransitionComplete = (actNumber) => {
+            console.log(`🎭 Camera transition completed to Act ${actNumber}`)
+            if (this.isTransitioning) {
+                this.completeActTransition()
+            }
+        }
+
+        this.cameraController.onTransitionUpdate = (progress, actNumber) => {
+            // Update any UI elements that track transition progress
+            this.transitionProgress = progress
+        }
     }
 
     init() {
-        // Initialize all acts
-        this.acts[1] = new Act1Matrix(this.scene, this.camera, this.audioAnalyzer)
-        this.acts[2] = new Act2Desert(this.scene, this.camera, this.audioAnalyzer)
-        this.acts[3] = new Act3Human(this.scene, this.camera, this.audioAnalyzer)
-        this.acts[4] = new Act4Stars(this.scene, this.camera, this.audioAnalyzer)
+        // Validate layout configuration
+        LayoutHelper.validateLayout()
+
+        // Initialize camera controller
+        this.cameraController.init()
+
+        // Initialize all acts with their positions
+        this.acts[1] = new Act1Matrix(this.scene, this.camera, this.audioAnalyzer, 1)
+        this.acts[2] = new Act2Desert(this.scene, this.camera, this.audioAnalyzer, 2)
+        this.acts[3] = new Act3Human(this.scene, this.camera, this.audioAnalyzer, 3)
+        this.acts[4] = new Act4Stars(this.scene, this.camera, this.audioAnalyzer, 4)
 
         // Initialize each act
         Object.values(this.acts).forEach(act => act.init())
 
-        // Start with Act 1
+        // Start with Act 1 as current, but keep all acts visible and active
         this.currentAct = this.acts[1]
-        this.currentAct.enter()
+
+        // Enter all acts so they're all visible and running
+        Object.values(this.acts).forEach(act => act.enter())
+
         this.actProgressTimer = performance.now()
 
-        console.log('🎭 Scene manager initialized with 4 acts')
+        console.log('🎭 Scene manager initialized with 4 spatially-separated acts (all visible and active)')
     }
 
     transitionToAct(actNumber) {
@@ -69,189 +109,75 @@ export class SceneManager {
         // Use demo transition duration if in demo mode
         const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
 
-        // Start enhanced transition
+        // Start camera-based transition
         this.isTransitioning = true
         this.transitionStartTime = performance.now()
         this.transitionProgress = 0
-        this.transitionPhase = 'fade-out'
+        this.transitionPhase = 'preparing'
 
         // Store transition state
         this.previousAct = this.currentAct
         this.nextAct = newAct
 
-        // Prepare both acts for transition
-        if (this.previousAct) {
-            this.previousAct.startExit()
-        }
-
+        // Prepare next act for entry
         if (this.nextAct) {
             this.nextAct.prepareEntry()
-            if (this.allowOverlap) {
-                this.nextAct.group.visible = true
-            } else {
-                this.nextAct.group.visible = false
-            }
         }
 
-        console.log(`🔄 Transitioning from Act ${this.currentActNumber} to Act ${actNumber}${this.demoMode ? ' (DEMO)' : ''}`)
+        // Start camera transition
+        if (this.cameraController.transitionToAct(actNumber, duration)) {
+            this.transitionPhase = 'camera-moving'
+        } else {
+            // Fallback if camera transition fails
+            this.completeActTransition()
+        }
+
+        console.log(`🔄 Transitioning from Act ${this.currentActNumber} to Act ${actNumber} via camera movement${this.demoMode ? ' (DEMO)' : ''}`)
     }
 
     update(time) {
-        // Handle transition
-        if (this.isTransitioning) {
-            this.updateTransition(time)
-        }
+        // Update camera controller
+        this.cameraController.update(time)
 
         // Handle auto-progression in demo mode
         if (this.autoProgress && !this.isTransitioning) {
             this.updateAutoProgress(time)
         }
 
-        // Update current act
-        if (this.currentAct) {
-            this.currentAct.update(time)
-        }
-
-        // Update all acts (some may need to run in background)
+        // Update ALL acts - don't pause any of them
         Object.values(this.acts).forEach(act => {
-            if (act !== this.currentAct) {
-                act.updateBackground(time)
-            }
+            act.update(time)
         })
     }
 
-    updateTransition(time) {
-        const duration = this.demoMode ? this.demoTransitionDuration : this.transitionDuration
-        const elapsed = time - this.transitionStartTime
-        this.transitionProgress = Math.min(elapsed / duration, 1)
+    /**
+     * Complete the act transition (called by camera controller)
+     */
+    completeActTransition() {
+        if (!this.isTransitioning) return
 
-        // Enhanced transition with three phases
-        if (this.transitionPhase === 'fade-out' && this.transitionProgress >= 0.25) {
-            // Switch to main transition phase
-            this.transitionPhase = 'transition'
+        // Complete the transition - but don't exit previous act to keep it visible
+        // if (this.previousAct) {
+        //     this.previousAct.exit()
+        // }
 
-            if (this.nextAct) {
-                this.nextAct.startEntry()
-                this.currentAct = this.nextAct
-                this.currentActNumber = this.getActNumber(this.nextAct)
-            }
-        } else if (this.transitionPhase === 'transition' && this.transitionProgress >= 0.75) {
-            // Switch to fade-in phase
-            this.transitionPhase = 'fade-in'
-
-            if (this.previousAct) {
-                this.previousAct.finishExit()
-            }
+        if (this.nextAct) {
+            this.nextAct.enter()
+            this.currentAct = this.nextAct
+            this.currentActNumber = this.getActNumber(this.nextAct)
         }
 
-        // Update both acts during transition
-        if (this.previousAct && this.transitionProgress < 0.8) {
-            this.previousAct.updateTransition(this.transitionProgress, 'exit')
-        }
+        // Reset transition state
+        this.isTransitioning = false
+        this.transitionProgress = 1
+        this.transitionPhase = 'complete'
+        this.previousAct = null
+        this.nextAct = null
 
-        if (this.nextAct && this.transitionProgress > 0.2) {
-            const entryProgress = Math.max(0, (this.transitionProgress - 0.2) / 0.8)
-            this.nextAct.updateTransition(entryProgress, 'enter')
-        }
+        // Reset auto-progress timer
+        this.actProgressTimer = performance.now()
 
-        // Apply smooth transition effects
-        this.applySmoothTransitionEffects()
-
-        // End transition
-        if (this.transitionProgress >= 1) {
-            this.isTransitioning = false
-            this.transitionProgress = 0
-            this.transitionPhase = 'idle'
-
-            if (this.previousAct) {
-                this.previousAct.exit()
-            }
-            if (this.nextAct) {
-                this.nextAct.enter()
-            }
-
-            this.previousAct = null
-            this.nextAct = null
-
-            // Reset auto-progress timer
-            this.actProgressTimer = time
-        }
-    }
-
-    applySmoothTransitionEffects() {
-        // Smooth easing function
-        const easeInOutCubic = (t) => {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-        }
-
-        const easedProgress = easeInOutCubic(this.transitionProgress)
-
-        // Apply smooth transitions based on phase
-        if (this.transitionPhase === 'fade-out') {
-            const fadeOutValue = 1.0 - (easedProgress * 4) // Fade out over first 25%
-            if (this.previousAct && this.previousAct.group) {
-                this.applyFadeToGroup(this.previousAct.group, Math.max(0, fadeOutValue))
-            }
-        } else if (this.transitionPhase === 'transition') {
-            // Both acts visible, transitioning
-            if (this.previousAct && this.previousAct.group) {
-                const exitFade = 1.0 - ((easedProgress - 0.25) * 2) // Continue fading previous
-                this.applyFadeToGroup(this.previousAct.group, Math.max(0, exitFade))
-            }
-            if (this.nextAct && this.nextAct.group) {
-                const entryFade = (easedProgress - 0.25) * 2 // Fade in new
-                this.applyFadeToGroup(this.nextAct.group, Math.min(1, Math.max(0, entryFade)))
-            }
-        } else if (this.transitionPhase === 'fade-in') {
-            const fadeInValue = (easedProgress - 0.75) * 4 // Fade in over last 25%
-            if (this.nextAct && this.nextAct.group) {
-                this.applyFadeToGroup(this.nextAct.group, Math.min(1, fadeInValue))
-            }
-        }
-    }
-
-    applyTransitionEffects() {
-        // Legacy transition method - kept for compatibility
-        this.applySmoothTransitionEffects()
-    }
-
-    applyFadeToGroup(group, fadeValue) {
-        group.traverse((child) => {
-            if (child.material) {
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(material => {
-                        this.applyFadeToMaterial(material, fadeValue)
-                    })
-                } else {
-                    this.applyFadeToMaterial(child.material, fadeValue)
-                }
-            }
-        })
-    }
-
-    applyFadeToMaterial(material, fadeValue) {
-        if (material.uniforms && material.uniforms.opacity) {
-            material.uniforms.opacity.value = fadeValue
-        } else if (material.opacity !== undefined) {
-            material.opacity = fadeValue
-            material.transparent = fadeValue < 1
-        }
-    }
-
-    getTransitionFade() {
-        // Smooth fade curve
-        const t = this.transitionProgress
-        return 0.5 + 0.5 * Math.cos(Math.PI * t)
-    }
-
-    getActNumber(act) {
-        // Helper method to get act number from act instance
-        for (const [number, actInstance] of Object.entries(this.acts)) {
-            if (actInstance === act) {
-                return parseInt(number)
-            }
-        }
-        return 1 // fallback
+        console.log(`🎭 Act transition completed - now at Act ${this.currentActNumber} (all acts remain visible)`)
     }
 
     getCurrentAct() {
@@ -263,11 +189,59 @@ export class SceneManager {
     }
 
     getTransitionProgress() {
-        return this.transitionProgress
+        return this.cameraController.isTransitioning ?
+            this.cameraController.transitionProgress : 0
     }
 
     isInTransition() {
-        return this.isTransitioning
+        return this.isTransitioning || this.cameraController.isTransitioning
+    }
+
+    /**
+     * Get camera controller for external access
+     */
+    getCameraController() {
+        return this.cameraController
+    }
+
+    /**
+     * Switch navigation mode between camera and fade
+     */
+    setNavigationMode(mode) {
+        if (mode === 'camera' || mode === 'fade') {
+            this.navigationMode = mode
+            console.log(`🎭 Navigation mode set to: ${mode}`)
+        } else {
+            console.warn(`Invalid navigation mode: ${mode}`)
+        }
+    }
+
+    /**
+     * Move camera to overview position
+     */
+    showOverview() {
+        this.cameraController.transitionToOverview()
+    }
+
+    /**
+     * Apply new layout configuration
+     */
+    updateLayout(layoutName = null) {
+        if (layoutName) {
+            LayoutHelper.applyLayout(layoutName)
+        }
+
+        // Update all acts with new positions
+        Object.values(this.acts).forEach(act => {
+            if (act.applyLayoutPosition) {
+                act.applyLayoutPosition()
+            }
+        })
+
+        // Update camera controller
+        this.cameraController.updateLayout()
+
+        console.log(`🎭 Layout updated${layoutName ? ` to ${layoutName}` : ''}`)
     }
 
     updateAutoProgress(time) {
@@ -282,6 +256,18 @@ export class SceneManager {
             }
             this.transitionToAct(nextAct)
         }
+    }
+
+    /**
+     * Helper method to get act number from act instance
+     */
+    getActNumber(act) {
+        for (const [number, actInstance] of Object.entries(this.acts)) {
+            if (actInstance === act) {
+                return parseInt(number)
+            }
+        }
+        return 1 // fallback
     }
 
     // Demo mode controls
@@ -340,6 +326,12 @@ export class SceneManager {
 
     // Cleanup method
     dispose() {
+        // Dispose camera controller
+        if (this.cameraController) {
+            this.cameraController.dispose()
+        }
+
+        // Dispose all acts
         Object.values(this.acts).forEach(act => {
             if (act.dispose) {
                 act.dispose()
@@ -347,3 +339,4 @@ export class SceneManager {
         })
     }
 }
+

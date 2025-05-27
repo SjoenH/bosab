@@ -94,6 +94,9 @@ export class PerformanceApp {
     async setupAudio() {
         this.audioAnalyzer = new AudioAnalyzer()
         await this.audioAnalyzer.init()
+
+        // Automatically request microphone access
+        await this.audioAnalyzer.requestMicrophone()
     }
 
     setupScenes() {
@@ -225,6 +228,7 @@ export class PerformanceApp {
     }
 
     transitionToAct(actNumber) {
+        this.currentAct = actNumber
         this.actStartTime = performance.now()
         this.sceneManager.transitionToAct(actNumber)
         this.controls.updateActIndicator(actNumber)

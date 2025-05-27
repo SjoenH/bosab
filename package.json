@@ -1,5 +1,7 @@
 {
   "name": "bosab",
+  "description": "Beneath our Skin and Bones: A performance piece exploring the human condition through the lens of technology and art.",
+  "author": "Dev: Henry",
   "private": true,
   "version": "0.0.0",
   "type": "module",
