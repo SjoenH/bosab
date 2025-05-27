@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+	base: "/bosab/",
 	server: {
 		port: 3000,
 		open: true,
