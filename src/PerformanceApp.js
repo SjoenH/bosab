@@ -23,9 +23,9 @@ export class PerformanceApp {
         // Timing configuration
         this.timingConfig = {
             actDuration: 6.25 * 60 * 1000, // 6.25 minutes in milliseconds
-            transitionDuration: 3 * 1000, // 3 seconds in milliseconds
-            demoActDuration: 5 * 1000, // 5 seconds in milliseconds
-            demoTransitionDuration: 0.5 * 1000 // 0.5 seconds in milliseconds
+            transitionDuration: 10 * 1000, // 10 seconds in milliseconds
+            demoActDuration: 30 * 1000, // 30 seconds in milliseconds
+            demoTransitionDuration: 10 * 1000 // 10 seconds in milliseconds
         }
 
         // Performance optimization

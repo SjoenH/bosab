@@ -9,6 +9,7 @@ export class Act4Stars {
         this.group = new THREE.Group()
         this.starfield = null
         this.cosmicDust = null
+        this.milkyWay = null
 
         this.isActive = false
         this.time = 0
@@ -24,6 +25,7 @@ export class Act4Stars {
     init() {
         this.scene.add(this.group)
         this.createStarfield()
+        this.createMilkyWay()
         this.createCosmicDust()
 
         console.log('✨ Act 4 - Stars initialized')
@@ -70,11 +72,88 @@ export class Act4Stars {
             transparent: true,
             opacity: 0.9, // Slightly more visible for warmth
             vertexColors: true,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true, // Makes stars round and size-based on distance
+            alphaTest: 0.1 // Helps with round appearance
         })
 
         this.starfield = new THREE.Points(geometry, material)
         this.group.add(this.starfield)
+    }
+
+    createMilkyWay() {
+        // Create a beautiful Milky Way band across the sky
+        const milkyWayCount = 3000
+        const geometry = new THREE.BufferGeometry()
+        const positions = new Float32Array(milkyWayCount * 3)
+        const colors = new Float32Array(milkyWayCount * 3)
+        const sizes = new Float32Array(milkyWayCount)
+
+        for (let i = 0; i < milkyWayCount; i++) {
+            // Create a diagonal band across the sky - more visible distribution
+            const t = i / milkyWayCount
+
+            // Create a diagonal band from one corner to another
+            const bandAngle = Math.PI * 0.25 // 45 degree angle
+            const bandWidth = 0.6 // Wider band for visibility
+
+            // Main band progression
+            const bandProgress = t * Math.PI * 2
+            const bandOffset = (Math.random() - 0.5) * bandWidth
+
+            // Calculate position along the band
+            const theta = bandProgress
+            const phi = Math.PI * 0.5 + bandOffset + Math.sin(bandProgress * 3) * 0.2
+
+            // Add clustering for realistic appearance
+            const cluster = Math.sin(bandProgress * 8) * 0.1
+            const finalPhi = phi + cluster
+
+            const radius = 120 + Math.random() * 200
+
+            positions[i * 3] = radius * Math.sin(finalPhi) * Math.cos(theta)
+            positions[i * 3 + 1] = radius * Math.sin(finalPhi) * Math.sin(theta)
+            positions[i * 3 + 2] = radius * Math.cos(finalPhi)
+
+            // Dense core colors - warm whites, blues, and subtle purples
+            const colorVariation = Math.random()
+            if (colorVariation < 0.6) {
+                // Warm white core
+                colors[i * 3] = 0.9 + Math.random() * 0.1
+                colors[i * 3 + 1] = 0.85 + Math.random() * 0.15
+                colors[i * 3 + 2] = 0.7 + Math.random() * 0.3
+            } else if (colorVariation < 0.8) {
+                // Blue stars
+                colors[i * 3] = 0.6 + Math.random() * 0.2
+                colors[i * 3 + 1] = 0.7 + Math.random() * 0.2
+                colors[i * 3 + 2] = 0.9 + Math.random() * 0.1
+            } else {
+                // Subtle purple/pink nebula regions
+                colors[i * 3] = 0.8 + Math.random() * 0.2
+                colors[i * 3 + 1] = 0.6 + Math.random() * 0.2
+                colors[i * 3 + 2] = 0.8 + Math.random() * 0.2
+            }
+
+            // Varying sizes for density variation
+            sizes[i] = Math.random() * 1.2 + 0.2
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+
+        const material = new THREE.PointsMaterial({
+            size: 0.6,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true, // Makes Milky Way stars round
+            alphaTest: 0.1
+        })
+
+        this.milkyWay = new THREE.Points(geometry, material)
+        this.group.add(this.milkyWay)
     }
 
     createCosmicDust() {
@@ -103,7 +182,9 @@ export class Act4Stars {
             size: 0.3, // Smaller particles
             transparent: true,
             opacity: 0.4, // More visible for gentle presence
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true, // Round particles
+            alphaTest: 0.1
         })
 
         this.cosmicDust = new THREE.Points(geometry, material)
@@ -116,6 +197,7 @@ export class Act4Stars {
         this.time += deltaTime
 
         this.updateStarfield(deltaTime)
+        this.updateMilkyWay()
         this.updateCosmicDust()
         this.updateCamera()
     }
@@ -126,17 +208,26 @@ export class Act4Stars {
 
         if (!this.starfield) return
 
-        // Very subtle twinkling effect - barely noticeable
-        this.starfield.material.opacity = 0.85 + audioIntensity * 0.05
+        // More noticeable twinkling effect
+        this.starfield.material.opacity = 0.7 + audioIntensity * 0.3
 
-        // Minimal beat reaction - just a gentle pulse
+        // More visible beat reaction
         if (beat) {
-            this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 0.85, 0.01)
+            this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 1.0, 0.05)
         } else {
-            this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 0.8, 0.03)
+            this.starfield.material.size = THREE.MathUtils.lerp(this.starfield.material.size, 0.8, 0.02)
         }
 
         // No rotation - stars remain perfectly still
+    }
+
+    updateMilkyWay() {
+        const audioLow = this.audioAnalyzer.getLowFreq()
+
+        if (!this.milkyWay) return
+
+        // More visible galactic dust movement
+        this.milkyWay.material.opacity = 0.6 + audioLow * 0.2
     }
 
     updateCosmicDust() {
@@ -144,9 +235,8 @@ export class Act4Stars {
 
         if (!this.cosmicDust) return
 
-        // No position updates - dust stays perfectly still like distant stars
-        // Only opacity changes for gentle twinkling effect
-        this.cosmicDust.material.opacity = 0.35 + audioMid * 0.05
+        // More visible twinkling effect for cosmic dust
+        this.cosmicDust.material.opacity = 0.3 + audioMid * 0.15
     }
 
     updateCamera() {
@@ -197,6 +287,11 @@ export class Act4Stars {
             }
             this.cosmicDust.geometry.attributes.position.needsUpdate = true
             this.cosmicDust.material.opacity = 0
+        }
+
+        // Start Milky Way faded
+        if (this.milkyWay) {
+            this.milkyWay.material.opacity = 0
         }
     }
 
@@ -271,6 +366,11 @@ export class Act4Stars {
                 this.cosmicDust.material.opacity = easedProgress * 0.3
             }
 
+            // Animate Milky Way appearing
+            if (this.milkyWay) {
+                this.milkyWay.material.opacity = easedProgress * 0.6
+            }
+
         } else if (direction === 'exit') {
             // Animate stars drifting away and fading
             if (this.starfield) {
@@ -290,6 +390,11 @@ export class Act4Stars {
             if (this.cosmicDust) {
                 this.cosmicDust.material.opacity = (1 - easedProgress) * 0.3
             }
+
+            // Milky Way fades out
+            if (this.milkyWay) {
+                this.milkyWay.material.opacity = (1 - easedProgress) * 0.6
+            }
         }
     }
 
@@ -307,6 +412,11 @@ export class Act4Stars {
         if (this.cosmicDust) {
             this.cosmicDust.geometry.dispose()
             this.cosmicDust.material.dispose()
+        }
+
+        if (this.milkyWay) {
+            this.milkyWay.geometry.dispose()
+            this.milkyWay.material.dispose()
         }
 
         this.scene.remove(this.group)
