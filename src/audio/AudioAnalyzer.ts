@@ -29,6 +29,16 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 	public volumeHistory: number[] = [];
 	public historySize = 10;
 
+	// Dynamics processing
+	public gainNode: GainNode | null = null;
+	public compressor: DynamicsCompressorNode | null = null;
+
+	// Silence detection
+	private silenceThreshold = 0.01;
+	private silenceTimeout = 5000; // 5 seconds
+	private lastAudioTime = Date.now();
+	private inSilentMode = false;
+
 	async init(): Promise<boolean> {
 		try {
 			// Create audio context
@@ -44,6 +54,22 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 			this.analyser.smoothingTimeConstant = 0.8;
 			this.bufferLength = this.analyser.frequencyBinCount;
 			this.dataArray = new Uint8Array(this.bufferLength);
+
+			// Setup compressor
+			this.compressor = this.audioContext.createDynamicsCompressor();
+			this.compressor.threshold.value = -24; // Start compressing at -24dB
+			this.compressor.knee.value = 12; // Smooth compression curve
+			this.compressor.ratio.value = 4; // Compression ratio
+			this.compressor.attack.value = 0.005; // Fast attack
+			this.compressor.release.value = 0.1; // Quick release
+
+			// Setup gain
+			this.gainNode = this.audioContext.createGain();
+			this.gainNode.gain.value = 1.5; // Boost the signal
+
+			// Connect nodes
+			this.compressor.connect(this.gainNode);
+			this.gainNode.connect(this.analyser);
 
 			console.log("🎤 Audio analyzer initialized");
 			return true;
@@ -67,12 +93,12 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 				},
 			});
 
-			if (!this.audioContext || !this.analyser) {
+			if (!this.audioContext || !this.analyser || !this.compressor) {
 				throw new Error("Audio context not initialized");
 			}
 
 			this.microphone = this.audioContext.createMediaStreamSource(stream);
-			this.microphone.connect(this.analyser);
+			this.microphone.connect(this.compressor); // Connect to compressor first
 
 			this.isMicrophoneConnected = true;
 			this.isEnabled = true;
@@ -87,18 +113,13 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 	}
 
 	startSilentMode(): void {
-		if (!this.audioContext || !this.analyser) {
+		if (!this.audioContext || !this.analyser || !this.compressor || !this.gainNode) {
 			return;
 		}
 
 		// Create a silent oscillator for demo purposes
 		const oscillator = this.audioContext.createOscillator();
-		const gainNode = this.audioContext.createGain();
-
-		gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-		oscillator.connect(gainNode);
-		gainNode.connect(this.analyser);
-
+		oscillator.connect(this.compressor); // Connect to compressor first
 		oscillator.start();
 		this.isEnabled = true;
 
@@ -129,6 +150,25 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 			sum += this.dataArray[i] * this.dataArray[i];
 		}
 		const rawVolume = Math.sqrt(sum / this.bufferLength) / 255;
+
+		// Check for silence
+		const currentTime = Date.now();
+		if (rawVolume > this.silenceThreshold) {
+			this.lastAudioTime = currentTime;
+			if (this.inSilentMode) {
+				this.inSilentMode = false;
+				console.log("🎤 Audio input detected, resuming normal mode");
+			}
+		} else if (!this.inSilentMode && currentTime - this.lastAudioTime > this.silenceTimeout) {
+			console.log("🔇 No audio input detected, switching to silent mode");
+			this.inSilentMode = true;
+		}
+
+		// Use fallback data if in silent mode
+		if (this.inSilentMode) {
+			this.generateFallbackData();
+			return;
+		}
 
 		// Smooth volume
 		this.volumeHistory.push(rawVolume);
@@ -259,6 +299,14 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 		if (this.microphone) {
 			this.microphone.disconnect();
 			this.microphone = null;
+		}
+		if (this.compressor) {
+			this.compressor.disconnect();
+			this.compressor = null;
+		}
+		if (this.gainNode) {
+			this.gainNode.disconnect();
+			this.gainNode = null;
 		}
 		if (this.audioContext) {
 			this.audioContext.close();
