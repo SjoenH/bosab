@@ -188,7 +188,7 @@ export class Act2Desert extends BaseAct {
 		this.dustParticleMaterial.size = 0.15;
 		this.dustParticleMaterial.color = new THREE.Color(0xb0a090);
 		this.dustParticleMaterial.transparent = true;
-		this.dustParticleMaterial.opacity = 0.5;
+		this.dustParticleMaterial.opacity = 0.6; // Increased base opacity
 		this.dustParticleMaterial.blending = THREE.AdditiveBlending;
 		this.dustParticleMaterial.depthWrite = false;
 		this.dustParticleMaterial.map = dustTexture;
@@ -441,10 +441,10 @@ export class Act2Desert extends BaseAct {
 		const bassLevel = this.getSmoothedAudio("bass", 0.18); // Faster smoothing
 		const midLevel = this.getSmoothedAudio("mid", 0.15); // Faster smoothing
 
-		// Sunset-like color variations - more pronounced
-		const hue = 0.08 + midLevel * 0.05; // Increased mid level effect on hue
-		const saturation = 0.5 + bassLevel * 0.35; // Increased bass effect on saturation, slightly lower base
-		const lightness = 0.45 + volume * 0.2; // Increased volume effect on lightness, slightly lower base
+		// Sunset-like color variations with enhanced contrast
+		const hue = 0.08 + midLevel * 0.05; // Keep the warm desert hue
+		const saturation = 0.6 + bassLevel * 0.35; // Higher base saturation
+		const lightness = 0.55 + volume * 0.25; // Increased base lightness and reactivity
 		this.particleMaterial.color.setHSL(hue, saturation, lightness);
 
 		// Dynamic particle size and opacity for dusty wind effect - more pronounced

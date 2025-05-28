@@ -65,7 +65,7 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 
 			// Setup gain
 			this.gainNode = this.audioContext.createGain();
-			this.gainNode.gain.value = 1.5; // Boost the signal
+			this.gainNode.gain.value = 2.5; // Boost the signal
 
 			// Connect nodes
 			this.compressor.connect(this.gainNode);

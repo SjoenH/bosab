@@ -175,9 +175,16 @@ export class Act1Matrix extends BaseAct {
 			"position",
 			new THREE.BufferAttribute(waveformPositions, 3),
 		);
-		this.waveformMaterial.color = new THREE.Color(0x00ff99);
-		this.waveformMaterial.opacity = 0.6;
-		this.waveformMaterial.transparent = true;
+
+		// Configure waveform material for CRT-like appearance
+		this.waveformMaterial = new THREE.LineBasicMaterial({
+			color: new THREE.Color(0x00ff99),
+			opacity: 0.9,
+			transparent: true,
+			linewidth: 3, // Thicker line (note: limited by WebGL)
+			blending: THREE.AdditiveBlending, // Add glow effect
+			depthWrite: false, // Prevent depth issues with transparency
+		});
 
 		this.waveformLine = new THREE.Line(
 			this.waveformGeometry,
@@ -363,10 +370,10 @@ export class Act1Matrix extends BaseAct {
 			let brightness: number;
 			if (isLeadChar) {
 				// Leading character is brightest and pulses with the audio
-				brightness = 1.0 + bassLevel * 0.3;
+				brightness = 1.2 + bassLevel * 0.4; // Increased brightness and reactivity
 			} else {
-				// Trail characters fade out gradually
-				brightness = Math.max(0.2, normalizedY * 0.8) * (0.7 + speedFactor * 0.3);
+				// Trail characters fade out gradually but maintain better visibility
+				brightness = Math.max(0.3, normalizedY * 0.9) * (0.8 + speedFactor * 0.3);
 			}
 
 			// Apply color with Matrix green tint
@@ -423,15 +430,22 @@ export class Act1Matrix extends BaseAct {
 
 		// Shift existing values for smoother transitions
 		this.dataValues.shift();
-		// Scale bass level for more pronounced waveform
-		this.dataValues.push(bassLevel * 6);
+		// Scale bass level for more pronounced waveform with enhanced amplitude
+		this.dataValues.push(bassLevel * 8); // Increased amplitude
 
-		// Update waveform geometry with smoothed values
+		// Update waveform geometry with smoothed values and enhanced smoothing
 		for (let i = 0; i < this.waveformPoints; i++) {
-			const smooth = (this.dataValues[i] +
+			// Apply 5-point smoothing for smoother curve
+			const smooth = (
+				(this.dataValues[i - 2] || this.dataValues[i]) +
 				(this.dataValues[i - 1] || this.dataValues[i]) +
-				(this.dataValues[i + 1] || this.dataValues[i])) / 3;
-			waveformPositions[i * 3 + 1] = smooth;
+				this.dataValues[i] * 2 +
+				(this.dataValues[i + 1] || this.dataValues[i]) +
+				(this.dataValues[i + 2] || this.dataValues[i])
+			) / 6;
+
+			// Apply the smoothed value with a minimum amplitude to keep the line visible
+			waveformPositions[i * 3 + 1] = Math.max(0.2, smooth);
 		}
 
 		this.particleGeometry.attributes.position.needsUpdate = true;
@@ -455,9 +469,10 @@ export class Act1Matrix extends BaseAct {
 
 		// Subtle color variation for all elements
 		const hue = 0.3 + trebleLevel * 0.05; // Slight color shift with treble
-		this.particleMaterial.color.setHSL(hue, 1, 0.5);
-		this.textMaterial.color.setHSL(hue, 0.9, 0.6);
-		this.waveformMaterial.color.setHSL(hue, 1, 0.5);
+		// Update colors with enhanced glow effect
+		this.particleMaterial.color.setHSL(hue, 1, 0.6); // Increased base lightness
+		this.textMaterial.color.setHSL(hue, 0.9, 0.7); // Brighter text
+		this.waveformMaterial.color.setHSL(hue, 1, 0.8); // Extra bright waveform
 	}
 
 	protected async animateEnter(): Promise<void> {

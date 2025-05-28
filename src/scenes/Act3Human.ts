@@ -248,10 +248,10 @@ export class Act3Human extends BaseAct {
 		// Calculate intensity based on current scale animation
 		const scaleIntensity = Math.abs(this.scaleVelocity) * 2;
 
-		// Warm color palette with scale-based influence
-		const hue = 0.02 + midLevel * 0.03 - scaleIntensity * 0.02; // More red during expansion
-		const saturation = 0.7 + volume * 0.2 + scaleIntensity * 0.3;
-		const lightness = 0.45 + trebleLevel * 0.15 + scaleIntensity * 0.1;
+		// Warm color palette with enhanced contrast
+		const hue = 0.02 + midLevel * 0.03 - scaleIntensity * 0.02; // Keep the warm human tone
+		const saturation = 0.8 + volume * 0.2 + scaleIntensity * 0.3; // Increased base saturation
+		const lightness = 0.55 + trebleLevel * 0.2 + scaleIntensity * 0.15; // Brighter with more dynamic range
 
 		// Update particle colors
 		this.particleMaterial.color.setHSL(hue, saturation, lightness);

@@ -48,11 +48,11 @@ export class Act4Stars extends BaseAct {
 			starPositions[i3 + 1] = this.originalPositions[i3 + 1] = y;
 			starPositions[i3 + 2] = this.originalPositions[i3 + 2] = z;
 
-			// More subtle star colors
-			const colorTemp = Math.random() * 0.3; // Reduced color variation
-			starColors[i3] = 0.8 + colorTemp * 0.2; // R - more subtle white
-			starColors[i3 + 1] = 0.8 + colorTemp * 0.2; // G
-			starColors[i3 + 2] = 0.8 + colorTemp * 0.2; // B
+			// Enhanced star colors with better contrast
+			const colorTemp = Math.random() * 0.35; // Slightly more color variation
+			starColors[i3] = 0.9 + colorTemp * 0.2; // R - brighter base white
+			starColors[i3 + 1] = 0.9 + colorTemp * 0.2; // G
+			starColors[i3 + 2] = 0.9 + colorTemp * 0.2; // B
 		}
 
 		// Create nebula particles
@@ -121,8 +121,8 @@ export class Act4Stars extends BaseAct {
 		if (!nebulaCtx) throw new Error('Could not create 2D context for nebula texture');
 		nebulaCanvas.width = nebulaCanvas.height = 64;
 		const nebulaGradient = nebulaCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-		nebulaGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-		nebulaGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+		nebulaGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)'); // Brighter center
+		nebulaGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)'); // More visible mid-range
 		nebulaGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 		nebulaCtx.fillStyle = nebulaGradient;
 		nebulaCtx.fillRect(0, 0, 64, 64);
