@@ -43,6 +43,7 @@ FROM nginx
 
 # Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 80
