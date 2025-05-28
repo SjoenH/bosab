@@ -8,16 +8,115 @@ import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { BaseAct } from "./BaseAct";
 
 export class Act1Matrix extends BaseAct {
-	private particleCount = 2000;
+	// Particle system constants
+	private readonly PARTICLE_COUNT = 2000;
+	private readonly PARTICLE_COLUMN_COUNT = 30;
+	private readonly PARTICLE_COLUMN_SPACING = 2.5;
+	private readonly PARTICLE_Y_SPREAD = 80;
+	private readonly PARTICLE_Y_OFFSET = -40;
+	private readonly PARTICLE_Z_SPREAD = 20;
+	private readonly PARTICLE_Z_OFFSET = -10;
+	private readonly MIN_FALL_SPEED = 4;
+	private readonly MAX_FALL_SPEED_ADDITION = 6;
+	private readonly INITIAL_PARTICLE_SIZE_MIN = 4.0;
+	private readonly INITIAL_PARTICLE_SIZE_RANDOM_ADDITION = 0.8;
+	private readonly PARTICLE_MATERIAL_BASE_SIZE = 2.0;
+	private readonly PARTICLE_MATERIAL_OPACITY = 0.95;
+	private readonly PARTICLE_MATERIAL_ALPHA_TEST = 0.05;
+	private readonly LEAD_CHAR_BASE_SIZE = 2.0;
+	private readonly TRAIL_CHAR_BASE_SIZE = 1.5;
+	private readonly MAX_FALL_SPEED_NORMALIZATION = 10;
+	private readonly BRIGHTNESS_PULSE_FACTOR = 0.4;
+	private readonly TRAIL_MIN_BRIGHTNESS = 0.3;
+	private readonly RESET_PARTICLE_Y_POSITION = 40;
+	private readonly RESET_PARTICLE_COLUMN_COUNT = 40; // This was 40 in reset, but 30 in creation. Standardizing to 30.
+	private readonly RESET_PARTICLE_COLUMN_SPACING = 1.2;
+	private readonly PARTICLE_DRIFT_SPEED_FACTOR = 0.005;
+	private readonly PARTICLE_OPACITY_BASS_FACTOR = 0.4;
+	private readonly PARTICLE_OPACITY_BASE = 0.6;
+	private readonly PARTICLE_SIZE_TREBLE_FACTOR = 0.15;
+	private readonly PARTICLE_SIZE_BASE = 0.2;
+	private readonly PARTICLE_HUE_TREBLE_FACTOR = 0.05;
+	private readonly PARTICLE_HUE_BASE = 0.3;
+	private readonly PARTICLE_LIGHTNESS_BASE = 0.6;
+
+
+	// Waveform constants
+	private readonly WAVEFORM_POINTS = 100;
+	private readonly WAVEFORM_WIDTH = 40;
+	private readonly WAVEFORM_X_OFFSET = -20;
+	private readonly WAVEFORM_Z_POSITION = -15;
+	private readonly WAVEFORM_LINEWIDTH = 3;
+	private readonly WAVEFORM_OPACITY = 0.8;
+	private readonly WAVEFORM_BASS_AMPLITUDE_FACTOR = 8;
+	private readonly WAVEFORM_SMOOTHING_POINTS_DIVISOR = 6;
+	private readonly WAVEFORM_MIN_AMPLITUDE = 0.2;
+	private readonly WAVEFORM_OPACITY_BASS_FACTOR = 0.4;
+	private readonly WAVEFORM_OPACITY_BASE = 0.6;
+	private readonly WAVEFORM_HUE_TREBLE_FACTOR = 0.05; // Same as particle, can be separate
+	private readonly WAVEFORM_HUE_BASE = 0.3; // Same as particle, can be separate
+	private readonly WAVEFORM_LIGHTNESS_BASE = 0.8;
+
+
+	// Text elements constants
+	private readonly STATISTICAL_TEXT_COUNT_BASE = 15;
+	private readonly STATISTICAL_TEXT_COUNT_RANDOM_ADDITION = 6;
+	private readonly TEXT_SIZE_BASE = 0.3;
+	private readonly TEXT_SIZE_RANDOM_ADDITION = 0.4;
+	private readonly TEXT_DEPTH = 0.02;
+	private readonly TEXT_CURVE_SEGMENTS = 12;
+	private readonly TEXT_X_SPREAD = 50;
+	private readonly TEXT_Y_SPAWN_MIN = 30;
+	private readonly TEXT_Y_SPAWN_RANDOM_ADDITION = 20;
+	private readonly TEXT_Z_SPREAD = 10;
+	private readonly TEXT_Z_OFFSET = -5;
+	private readonly TEXT_MIN_FALL_SPEED = 0.5;
+	private readonly TEXT_FALL_SPEED_RANDOM_ADDITION = 1.5;
+	private readonly TEXT_ROTATION_SPEED_FACTOR = 0.02;
+	private readonly TEXT_RESPAWN_Y_THRESHOLD = -50;
+	private readonly MAX_TEXT_ELEMENTS = 25;
+	private readonly TEXT_SPAWN_PROBABILITY_BASE = 0.005;
+	private readonly TEXT_MATERIAL_OPACITY = 0.7;
+	private readonly TEXT_OPACITY_BASS_FACTOR = 0.3;
+	private readonly TEXT_OPACITY_TREBLE_FACTOR = 0.2;
+	private readonly TEXT_OPACITY_BASE = 0.5;
+	private readonly TEXT_HUE_TREBLE_FACTOR = 0.05; // Same as particle, can be separate
+	private readonly TEXT_HUE_BASE = 0.3; // Same as particle, can be separate
+	private readonly TEXT_LIGHTNESS_BASE = 0.7;
+
+
+	// Character texture constants
+	private readonly CHAR_CANVAS_WIDTH = 256;
+	private readonly CHAR_CANVAS_HEIGHT = 1024;
+	private readonly CHAR_FONT_SIZE_PX = 192;
+	private readonly CHAR_FILL_STYLE = '#00ff99';
+	private readonly CHAR_TRAIL_COUNT = 6;
+	private readonly CHAR_TRAIL_OPACITY_STEP = 0.2;
+	private readonly CHAR_GLOW_GRADIENT_RADIUS = 96;
+	private readonly CHAR_GLOW_GRADIENT_COLOR_START = 'rgba(0, 255, 153, 0.3)';
+	private readonly CHAR_GLOW_GRADIENT_COLOR_END = 'rgba(0, 255, 153, 0)';
+
+
+	// Audio smoothing factors
+	private readonly AUDIO_VOLUME_SMOOTHING = 0.1;
+	private readonly AUDIO_TREBLE_SMOOTHING = 0.1;
+	private readonly AUDIO_BASS_SMOOTHING = 0.15;
+	private readonly AUDIO_BASS_SMOOTHING_EFFECTS = 0.2;
+
+	// Animation constants
+	private readonly FADE_TRANSITION_DURATION = 1000;
+
+
+	private particleCount = this.PARTICLE_COUNT;
 	private particleGeometry: THREE.BufferGeometry = new THREE.BufferGeometry();
 	private particleMaterial: THREE.PointsMaterial = new THREE.PointsMaterial();
 	private waveformGeometry: THREE.BufferGeometry = new THREE.BufferGeometry();
 	private waveformMaterial: THREE.LineBasicMaterial =
 		new THREE.LineBasicMaterial();
-	private waveformPoints = 100;
+	private waveformPoints = this.WAVEFORM_POINTS;
 	private waveformLine: THREE.Line = new THREE.Line();
 	private dataValues: number[] = [];
-	private fallSpeeds: Float32Array = new Float32Array(2000); // Initialize with particleCount
+	private fallSpeeds: Float32Array = new Float32Array(this.PARTICLE_COUNT); // Initialize with particleCount
 
 	// Statistical text elements
 	private textMeshes: THREE.Mesh[] = [];
@@ -47,33 +146,36 @@ export class Act1Matrix extends BaseAct {
 		if (!charCtx) throw new Error('Could not create 2D context for character texture');
 
 		// Make canvas larger for bigger characters and longer trails
-		charCanvas.width = 256;   // Increased from 128
-		charCanvas.height = 1024;  // Increased from 512
+		charCanvas.width = this.CHAR_CANVAS_WIDTH;
+		charCanvas.height = this.CHAR_CANVAS_HEIGHT;
 
 		// Set up text rendering with larger font
-		charCtx.fillStyle = '#00ff99';
+		charCtx.fillStyle = this.CHAR_FILL_STYLE;
 		charCtx.textAlign = 'center';
 		charCtx.textBaseline = 'middle';
-		charCtx.font = 'bold 192px monospace';  // Increased from 96px
+		charCtx.font = `bold ${this.CHAR_FONT_SIZE_PX}px monospace`;
 
 		// Draw the main character (randomly 0 or 1)
 		const char = Math.random() < 0.5 ? '0' : '1';
-		charCtx.fillText(char, 128, 128);  // Adjusted center point
+		charCtx.fillText(char, this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2); // Adjusted center point
 
 		// Create trail effect with multiple fading copies
-		for (let i = 1; i < 6; i++) {
-			const opacity = 1 - (i * 0.2);
+		for (let i = 1; i < this.CHAR_TRAIL_COUNT; i++) {
+			const opacity = 1 - (i * this.CHAR_TRAIL_OPACITY_STEP);
 			charCtx.fillStyle = `rgba(0, 255, 153, ${opacity})`;
-			charCtx.fillText(char, 128, 128 + i * 192);  // Adjusted spacing for larger font
+			charCtx.fillText(char, this.CHAR_CANVAS_WIDTH / 2, (this.CHAR_FONT_SIZE_PX / 2) + i * this.CHAR_FONT_SIZE_PX);
 		}
 
 		// Add stronger glow effect
-		const glowGradient = charCtx.createRadialGradient(128, 128, 0, 128, 128, 96);  // Adjusted for larger size
-		glowGradient.addColorStop(0, 'rgba(0, 255, 153, 0.3)');
-		glowGradient.addColorStop(1, 'rgba(0, 255, 153, 0)');
+		const glowGradient = charCtx.createRadialGradient(
+			this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2, 0,
+			this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2, this.CHAR_GLOW_GRADIENT_RADIUS
+		);
+		glowGradient.addColorStop(0, this.CHAR_GLOW_GRADIENT_COLOR_START);
+		glowGradient.addColorStop(1, this.CHAR_GLOW_GRADIENT_COLOR_END);
 		charCtx.globalCompositeOperation = 'screen';
 		charCtx.fillStyle = glowGradient;
-		charCtx.fillRect(0, 0, 256, 256);  // Adjusted for larger canvas
+		charCtx.fillRect(0, 0, this.CHAR_CANVAS_WIDTH, this.CHAR_CANVAS_WIDTH); // Use CHAR_CANVAS_WIDTH for square glow area around char
 
 		const charTexture = new THREE.CanvasTexture(charCanvas);
 		charTexture.needsUpdate = true;
@@ -104,19 +206,19 @@ export class Act1Matrix extends BaseAct {
 
 		for (let i = 0; i < this.particleCount; i++) {
 			// Create tighter columns for Matrix characters
-			const col = i % 30; // 30 columns (reduced from 40 for bigger characters)
-			const row = Math.floor(i / 30);
+			const col = i % this.PARTICLE_COLUMN_COUNT;
+			const row = Math.floor(i / this.PARTICLE_COLUMN_COUNT);
 
-			const x = (col - 15) * 2.5;  // Increased column spacing
-			const y = Math.random() * 80 - 40;
-			const z = -10 + Math.random() * 20;
+			const x = (col - this.PARTICLE_COLUMN_COUNT / 2) * this.PARTICLE_COLUMN_SPACING;
+			const y = Math.random() * this.PARTICLE_Y_SPREAD + this.PARTICLE_Y_OFFSET;
+			const z = this.PARTICLE_Z_OFFSET + Math.random() * this.PARTICLE_Z_SPREAD;
 
 			positions[i * 3] = x;
 			positions[i * 3 + 1] = y;
 			positions[i * 3 + 2] = z;
 
 			// Initialize random fall speeds
-			this.fallSpeeds[i] = 4 + Math.random() * 6;
+			this.fallSpeeds[i] = this.MIN_FALL_SPEED + Math.random() * this.MAX_FALL_SPEED_ADDITION;
 
 			// Initialize colors with brighter values at spawn
 			colors[i * 3] = 0; // R
@@ -124,7 +226,7 @@ export class Act1Matrix extends BaseAct {
 			colors[i * 3 + 2] = 0.7; // B
 
 			// Initialize sizes for larger characters
-			sizes[i] = 4.0 + Math.random() * 0.8;  // Increased base size
+			sizes[i] = this.INITIAL_PARTICLE_SIZE_MIN + Math.random() * this.INITIAL_PARTICLE_SIZE_RANDOM_ADDITION;
 		}
 
 		this.particleGeometry.setAttribute(
@@ -142,14 +244,14 @@ export class Act1Matrix extends BaseAct {
 
 		// Update material settings for character particles
 		this.particleMaterial = new THREE.PointsMaterial({
-			size: 2.0,  // Increased base size
+			size: this.PARTICLE_MATERIAL_BASE_SIZE,
 			map: charTexture,
 			vertexColors: true,
 			transparent: true,
-			opacity: 0.95,
+			opacity: this.PARTICLE_MATERIAL_OPACITY,
 			blending: THREE.AdditiveBlending,
 			depthWrite: false,
-			alphaTest: 0.05  // Reduced for smoother edges
+			alphaTest: this.PARTICLE_MATERIAL_ALPHA_TEST
 		});
 
 		// Create particle system
@@ -166,9 +268,9 @@ export class Act1Matrix extends BaseAct {
 		// Create waveform line for medical data visualization
 		const waveformPositions = new Float32Array(this.waveformPoints * 3);
 		for (let i = 0; i < this.waveformPoints; i++) {
-			waveformPositions[i * 3] = (i / this.waveformPoints) * 40 - 20;
+			waveformPositions[i * 3] = (i / this.waveformPoints) * this.WAVEFORM_WIDTH + this.WAVEFORM_X_OFFSET;
 			waveformPositions[i * 3 + 1] = 0;
-			waveformPositions[i * 3 + 2] = -15; // Move waveform behind particles
+			waveformPositions[i * 3 + 2] = this.WAVEFORM_Z_POSITION;
 		}
 
 		this.waveformGeometry.setAttribute(
@@ -176,14 +278,14 @@ export class Act1Matrix extends BaseAct {
 			new THREE.BufferAttribute(waveformPositions, 3),
 		);
 
-		// Configure waveform material for CRT-like appearance
+		// Configure waveform material for CRT-like appearance with glow
 		this.waveformMaterial = new THREE.LineBasicMaterial({
-			color: new THREE.Color(0x00ff99),
-			opacity: 0.9,
+			color: new THREE.Color(this.CHAR_FILL_STYLE), // Use consistent green
+			opacity: this.WAVEFORM_OPACITY,
 			transparent: true,
-			linewidth: 3, // Thicker line (note: limited by WebGL)
+			linewidth: this.WAVEFORM_LINEWIDTH,
 			blending: THREE.AdditiveBlending, // Add glow effect
-			depthWrite: false, // Prevent depth issues with transparency
+			depthWrite: false // Prevent depth issues with transparency
 		});
 
 		this.waveformLine = new THREE.Line(
@@ -217,12 +319,12 @@ export class Act1Matrix extends BaseAct {
 		this.textRotations = [];
 
 		// Setup text material
-		this.textMaterial.color = new THREE.Color(0x00ff99);
+		this.textMaterial.color = new THREE.Color(this.CHAR_FILL_STYLE); // Use consistent green
 		this.textMaterial.transparent = true;
-		this.textMaterial.opacity = 0.7;
+		this.textMaterial.opacity = this.TEXT_MATERIAL_OPACITY;
 
 		// Create 15-20 text elements
-		const textCount = 15 + Math.floor(Math.random() * 6);
+		const textCount = this.STATISTICAL_TEXT_COUNT_BASE + Math.floor(Math.random() * this.STATISTICAL_TEXT_COUNT_RANDOM_ADDITION);
 
 		for (let i = 0; i < textCount; i++) {
 			const term = this.statisticalTerms[Math.floor(Math.random() * this.statisticalTerms.length)];
@@ -230,9 +332,9 @@ export class Act1Matrix extends BaseAct {
 			try {
 				const textGeometry = new TextGeometry(term, {
 					font: font,
-					size: 0.3 + Math.random() * 0.4,
-					depth: 0.02,
-					curveSegments: 12,
+					size: this.TEXT_SIZE_BASE + Math.random() * this.TEXT_SIZE_RANDOM_ADDITION,
+					depth: this.TEXT_DEPTH,
+					curveSegments: this.TEXT_CURVE_SEGMENTS,
 					bevelEnabled: false
 				});
 
@@ -240,9 +342,9 @@ export class Act1Matrix extends BaseAct {
 				const textMesh = new THREE.Mesh(textGeometry, this.textMaterial);
 
 				// Random position
-				textMesh.position.x = (Math.random() - 0.5) * 50;
-				textMesh.position.y = 30 + Math.random() * 20;
-				textMesh.position.z = -5 + Math.random() * 10;
+				textMesh.position.x = (Math.random() - 0.5) * this.TEXT_X_SPREAD;
+				textMesh.position.y = this.TEXT_Y_SPAWN_MIN + Math.random() * this.TEXT_Y_SPAWN_RANDOM_ADDITION;
+				textMesh.position.z = this.TEXT_Z_OFFSET + Math.random() * this.TEXT_Z_SPREAD;
 
 				// Random rotation
 				const rotation = Math.random() * Math.PI;
@@ -250,8 +352,8 @@ export class Act1Matrix extends BaseAct {
 
 				this.textGeometries.push(textGeometry);
 				this.textMeshes.push(textMesh);
-				this.textFallSpeeds.push(0.5 + Math.random() * 1.5);
-				this.textRotations.push((Math.random() - 0.5) * 0.02);
+				this.textFallSpeeds.push(this.TEXT_MIN_FALL_SPEED + Math.random() * this.TEXT_FALL_SPEED_RANDOM_ADDITION);
+				this.textRotations.push((Math.random() - 0.5) * this.TEXT_ROTATION_SPEED_FACTOR);
 
 				this.group.add(textMesh);
 			} catch (error) {
@@ -274,9 +376,9 @@ export class Act1Matrix extends BaseAct {
 
 			const newGeometry = new TextGeometry(term, {
 				font: this.font,
-				size: 0.3 + Math.random() * 0.4,
-				depth: 0.02,
-				curveSegments: 12,
+				size: this.TEXT_SIZE_BASE + Math.random() * this.TEXT_SIZE_RANDOM_ADDITION,
+				depth: this.TEXT_DEPTH,
+				curveSegments: this.TEXT_CURVE_SEGMENTS,
 				bevelEnabled: false
 			});
 
@@ -284,14 +386,14 @@ export class Act1Matrix extends BaseAct {
 			this.textGeometries[index] = newGeometry;
 
 			// Reset position to top
-			mesh.position.x = (Math.random() - 0.5) * 50;
-			mesh.position.y = 30 + Math.random() * 20;
-			mesh.position.z = -5 + Math.random() * 10;
+			mesh.position.x = (Math.random() - 0.5) * this.TEXT_X_SPREAD;
+			mesh.position.y = this.TEXT_Y_SPAWN_MIN + Math.random() * this.TEXT_Y_SPAWN_RANDOM_ADDITION;
+			mesh.position.z = this.TEXT_Z_OFFSET + Math.random() * this.TEXT_Z_SPREAD;
 
 			// New rotation
 			mesh.rotation.z = Math.random() * Math.PI;
-			this.textRotations[index] = (Math.random() - 0.5) * 0.02;
-			this.textFallSpeeds[index] = 0.5 + Math.random() * 1.5;
+			this.textRotations[index] = (Math.random() - 0.5) * this.TEXT_ROTATION_SPEED_FACTOR;
+			this.textFallSpeeds[index] = this.TEXT_MIN_FALL_SPEED + Math.random() * this.TEXT_FALL_SPEED_RANDOM_ADDITION;
 		} catch (error) {
 			console.warn('Failed to respawn text:', error);
 		}
@@ -305,26 +407,26 @@ export class Act1Matrix extends BaseAct {
 		try {
 			const textGeometry = new TextGeometry(term, {
 				font: this.font,
-				size: 0.3 + Math.random() * 0.4,
-				depth: 0.02,
-				curveSegments: 12,
+				size: this.TEXT_SIZE_BASE + Math.random() * this.TEXT_SIZE_RANDOM_ADDITION,
+				depth: this.TEXT_DEPTH,
+				curveSegments: this.TEXT_CURVE_SEGMENTS,
 				bevelEnabled: false
 			});
 
 			const textMesh = new THREE.Mesh(textGeometry, this.textMaterial);
 
 			// Random position at top
-			textMesh.position.x = (Math.random() - 0.5) * 50;
-			textMesh.position.y = 30 + Math.random() * 20;
-			textMesh.position.z = -5 + Math.random() * 10;
+			textMesh.position.x = (Math.random() - 0.5) * this.TEXT_X_SPREAD;
+			textMesh.position.y = this.TEXT_Y_SPAWN_MIN + Math.random() * this.TEXT_Y_SPAWN_RANDOM_ADDITION;
+			textMesh.position.z = this.TEXT_Z_OFFSET + Math.random() * this.TEXT_Z_SPREAD;
 
 			// Random rotation
 			textMesh.rotation.z = Math.random() * Math.PI;
 
 			this.textGeometries.push(textGeometry);
 			this.textMeshes.push(textMesh);
-			this.textFallSpeeds.push(0.5 + Math.random() * 1.5);
-			this.textRotations.push((Math.random() - 0.5) * 0.02);
+			this.textFallSpeeds.push(this.TEXT_MIN_FALL_SPEED + Math.random() * this.TEXT_FALL_SPEED_RANDOM_ADDITION);
+			this.textRotations.push((Math.random() - 0.5) * this.TEXT_ROTATION_SPEED_FACTOR);
 
 			this.group.add(textMesh);
 		} catch (error) {
@@ -336,9 +438,9 @@ export class Act1Matrix extends BaseAct {
 		if (this.particles.length === 0) return;
 
 		const deltaSeconds = deltaTime / 1000;
-		const audioLevel = this.getSmoothedAudio("volume", 0.1);
-		const trebleLevel = this.getSmoothedAudio("treble", 0.1);
-		const bassLevel = this.getSmoothedAudio("bass", 0.15);
+		const audioLevel = this.getSmoothedAudio("volume", this.AUDIO_VOLUME_SMOOTHING);
+		const trebleLevel = this.getSmoothedAudio("treble", this.AUDIO_TREBLE_SMOOTHING);
+		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_BASS_SMOOTHING);
 
 		// Update particle positions for Matrix rain effect
 		const positions = this.particleGeometry.attributes.position.array as Float32Array;
@@ -353,16 +455,16 @@ export class Act1Matrix extends BaseAct {
 			positions[i3 + 1] -= fallSpeed * deltaSeconds;
 
 			// Add very subtle horizontal drift based on treble
-			positions[i3] += Math.sin(this.time * 0.001 + i * 0.1) * trebleLevel * 0.005;
+			positions[i3] += Math.sin(this.time * 0.001 + i * 0.1) * trebleLevel * this.PARTICLE_DRIFT_SPEED_FACTOR;
 
 			// Calculate normalized position for fade effects
-			const normalizedY = (positions[i3 + 1] + 40) / 80; // 0 at bottom, 1 at top
-			const speedFactor = fallSpeed / 10; // Normalize by max speed
+			const normalizedY = (positions[i3 + 1] + this.PARTICLE_Y_SPREAD / 2) / this.PARTICLE_Y_SPREAD; // 0 at bottom, 1 at top
+			const speedFactor = fallSpeed / this.MAX_FALL_SPEED_NORMALIZATION; // Normalize by max speed
 
 			// Update character size based on position and speed
 			// Leading characters are larger
 			const isLeadChar = normalizedY > 0.8;
-			const baseSize = isLeadChar ? 2.0 : 1.5;
+			const baseSize = isLeadChar ? this.LEAD_CHAR_BASE_SIZE : this.TRAIL_CHAR_BASE_SIZE;
 			sizes[i] = baseSize * (0.8 + speedFactor * 0.2) * (1 + trebleLevel * 0.2);
 
 			// Update character brightness
@@ -370,10 +472,10 @@ export class Act1Matrix extends BaseAct {
 			let brightness: number;
 			if (isLeadChar) {
 				// Leading character is brightest and pulses with the audio
-				brightness = 1.2 + bassLevel * 0.4; // Increased brightness and reactivity
+				brightness = 1.2 + bassLevel * this.BRIGHTNESS_PULSE_FACTOR; // Increased brightness and reactivity
 			} else {
 				// Trail characters fade out gradually but maintain better visibility
-				brightness = Math.max(0.3, normalizedY * 0.9) * (0.8 + speedFactor * 0.3);
+				brightness = Math.max(this.TRAIL_MIN_BRIGHTNESS, normalizedY * 0.9) * (0.8 + speedFactor * 0.3);
 			}
 
 			// Apply color with Matrix green tint
@@ -382,11 +484,11 @@ export class Act1Matrix extends BaseAct {
 			colors[i3 + 2] = brightness * 0.7; // B (slight blue tint)
 
 			// Reset particles that fall below the view
-			if (positions[i3 + 1] < -40) {
-				positions[i3 + 1] = 40; // Reset to top
+			if (positions[i3 + 1] < this.PARTICLE_Y_OFFSET) {
+				positions[i3 + 1] = this.RESET_PARTICLE_Y_POSITION; // Reset to top
 				// Keep particles in strict columns for Matrix effect
-				positions[i3] = ((i % 40) - 20) * 1.2;
-				this.fallSpeeds[i] = 4 + Math.random() * 6;
+				positions[i3] = ((i % this.RESET_PARTICLE_COLUMN_COUNT) - this.RESET_PARTICLE_COLUMN_COUNT / 2) * this.RESET_PARTICLE_COLUMN_SPACING;
+				this.fallSpeeds[i] = this.MIN_FALL_SPEED + Math.random() * this.MAX_FALL_SPEED_ADDITION;
 
 				// Full brightness for new characters
 				colors[i3] = 0;
@@ -395,7 +497,7 @@ export class Act1Matrix extends BaseAct {
 			}
 
 			// Ensure particles stay in their columns
-			const targetX = ((i % 40) - 20) * 1.2;
+			const targetX = ((i % this.RESET_PARTICLE_COLUMN_COUNT) - this.RESET_PARTICLE_COLUMN_COUNT / 2) * this.RESET_PARTICLE_COLUMN_SPACING;
 			positions[i3] += (targetX - positions[i3]) * 0.1;
 		}
 
@@ -410,17 +512,17 @@ export class Act1Matrix extends BaseAct {
 			mesh.rotation.z += this.textRotations[i] * deltaSeconds;
 
 			// Very subtle horizontal drift
-			mesh.position.x += Math.sin(this.time * 0.0005 + i) * trebleLevel * 0.005;
+			mesh.position.x += Math.sin(this.time * 0.0005 + i) * trebleLevel * this.PARTICLE_DRIFT_SPEED_FACTOR; // Re-use particle drift factor
 
 			// Respawn text that falls below view
-			if (mesh.position.y < -50) {
+			if (mesh.position.y < this.TEXT_RESPAWN_Y_THRESHOLD) {
 				this.respawnText(i);
 			}
 		}
 
 		// Periodically spawn new text elements with audio-reactive frequency
-		if (this.font && Math.random() < 0.005 * (1 + audioLevel)) {
-			if (this.textMeshes.length < 25) {
+		if (this.font && Math.random() < this.TEXT_SPAWN_PROBABILITY_BASE * (1 + audioLevel)) {
+			if (this.textMeshes.length < this.MAX_TEXT_ELEMENTS) {
 				this.addRandomText();
 			}
 		}
@@ -431,7 +533,7 @@ export class Act1Matrix extends BaseAct {
 		// Shift existing values for smoother transitions
 		this.dataValues.shift();
 		// Scale bass level for more pronounced waveform with enhanced amplitude
-		this.dataValues.push(bassLevel * 8); // Increased amplitude
+		this.dataValues.push(bassLevel * this.WAVEFORM_BASS_AMPLITUDE_FACTOR); // Increased amplitude
 
 		// Update waveform geometry with smoothed values and enhanced smoothing
 		for (let i = 0; i < this.waveformPoints; i++) {
@@ -442,10 +544,10 @@ export class Act1Matrix extends BaseAct {
 				this.dataValues[i] * 2 +
 				(this.dataValues[i + 1] || this.dataValues[i]) +
 				(this.dataValues[i + 2] || this.dataValues[i])
-			) / 6;
+			) / this.WAVEFORM_SMOOTHING_POINTS_DIVISOR;
 
 			// Apply the smoothed value with a minimum amplitude to keep the line visible
-			waveformPositions[i * 3 + 1] = Math.max(0.2, smooth);
+			waveformPositions[i * 3 + 1] = Math.max(this.WAVEFORM_MIN_AMPLITUDE, smooth);
 		}
 
 		this.particleGeometry.attributes.position.needsUpdate = true;
@@ -456,31 +558,31 @@ export class Act1Matrix extends BaseAct {
 
 	protected updateVisualEffects(deltaTime: number): void {
 		// Pulse opacity with bass
-		const bassLevel = this.getSmoothedAudio("bass", 0.2);
-		this.particleMaterial.opacity = 0.6 + bassLevel * 0.4;
-		this.waveformMaterial.opacity = 0.3 + bassLevel * 0.4;
+		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_BASS_SMOOTHING_EFFECTS);
+		this.particleMaterial.opacity = this.PARTICLE_OPACITY_BASE + bassLevel * this.PARTICLE_OPACITY_BASS_FACTOR;
+		this.waveformMaterial.opacity = this.WAVEFORM_OPACITY_BASE + bassLevel * this.WAVEFORM_OPACITY_BASS_FACTOR;
 
 		// Update text opacity and effects
-		const trebleLevel = this.getSmoothedAudio("treble", 0.1);
-		this.textMaterial.opacity = 0.5 + bassLevel * 0.3 + trebleLevel * 0.2;
+		const trebleLevel = this.getSmoothedAudio("treble", this.AUDIO_TREBLE_SMOOTHING);
+		this.textMaterial.opacity = this.TEXT_OPACITY_BASE + bassLevel * this.TEXT_OPACITY_BASS_FACTOR + trebleLevel * this.TEXT_OPACITY_TREBLE_FACTOR;
 
 		// Change particle size for "digital rain" effect
-		this.particleMaterial.size = 0.2 + trebleLevel * 0.15;
+		this.particleMaterial.size = this.PARTICLE_SIZE_BASE + trebleLevel * this.PARTICLE_SIZE_TREBLE_FACTOR;
 
 		// Subtle color variation for all elements
-		const hue = 0.3 + trebleLevel * 0.05; // Slight color shift with treble
+		const hue = this.PARTICLE_HUE_BASE + trebleLevel * this.PARTICLE_HUE_TREBLE_FACTOR;
 		// Update colors with enhanced glow effect
-		this.particleMaterial.color.setHSL(hue, 1, 0.6); // Increased base lightness
-		this.textMaterial.color.setHSL(hue, 0.9, 0.7); // Brighter text
-		this.waveformMaterial.color.setHSL(hue, 1, 0.8); // Extra bright waveform
+		this.particleMaterial.color.setHSL(hue, 1, this.PARTICLE_LIGHTNESS_BASE);
+		this.textMaterial.color.setHSL(this.TEXT_HUE_BASE + trebleLevel * this.TEXT_HUE_TREBLE_FACTOR, 0.9, this.TEXT_LIGHTNESS_BASE);
+		this.waveformMaterial.color.setHSL(this.WAVEFORM_HUE_BASE + trebleLevel * this.WAVEFORM_HUE_TREBLE_FACTOR, 1, this.WAVEFORM_LIGHTNESS_BASE);
 	}
 
 	protected async animateEnter(): Promise<void> {
-		return this.createFadeTransition(1000);
+		return this.createFadeTransition(this.FADE_TRANSITION_DURATION);
 	}
 
 	protected async animateExit(): Promise<void> {
-		return this.createFadeTransition(1000);
+		return this.createFadeTransition(this.FADE_TRANSITION_DURATION);
 	}
 
 	public dispose(): void {
