@@ -1,3 +1,5 @@
+@import './styles/mobile-nav.css';
+
 /* Reset and full-screen setup */
 * {
 	margin: 0;

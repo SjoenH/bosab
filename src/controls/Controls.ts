@@ -39,6 +39,9 @@ export class Controls {
 	private totalDurationDisplay: HTMLElement | null = null;
 	private demoDurationDisplay: HTMLElement | null = null;
 
+	// Mobile navigation
+	private mobileNav: HTMLElement | null = null;
+
 	// Event handlers as bound methods
 	private handleKeyDown = (event: KeyboardEvent): void => {
 		// Ignore key events while typing in input fields
@@ -138,6 +141,7 @@ export class Controls {
 		this.setupPlayButton();
 		this.setupFullscreenButton();
 		this.setupTimingConfig();
+		this.createMobileNav(); // Create mobile navigation
 		this.updateActIndicator(1);
 		this.updateMicrophoneStatus("disconnected");
 		this.isInitialized = true;
@@ -147,7 +151,7 @@ export class Controls {
 		window.addEventListener("keyup", this.handleKeyUp);
 		window.addEventListener("resize", this.handleResize);
 
-		console.log("🎮 Controls initialized with keyboard navigation");
+		console.log("🎮 Controls initialized with keyboard and mobile navigation");
 	}
 
 	private setupPlayButton(): void {
@@ -225,6 +229,9 @@ export class Controls {
 
 		// Add subtle color coding
 		this.actIndicator.style.borderColor = this.getActColor(actNumber);
+
+		// Update mobile navigation
+		this.updateMobileNav(actNumber);
 	}
 
 	private getActColor(actNumber: number): string {
@@ -592,6 +599,11 @@ export class Controls {
 		if (container) {
 			container.remove();
 		}
+
+		// Clean up mobile navigation
+		if (this.mobileNav) {
+			this.mobileNav.remove();
+		}
 	}
 
 	private updatePositions(): void {
@@ -607,6 +619,81 @@ export class Controls {
 		if (configContainer instanceof HTMLElement) {
 			configContainer.style.right = `${margin}px`;
 			configContainer.style.top = `${margin}px`;
+		}
+	}
+	private createMobileNav(): void {
+		// Remove existing mobile nav if it exists
+		if (this.mobileNav) {
+			this.mobileNav.remove();
+		}
+
+		const mobileNav = document.createElement("div");
+		mobileNav.className = "mobile-nav";
+
+		// Create a button for each act
+		const actNames = {
+			1: "Matrix",
+			2: "Desert",
+			3: "Human",
+			4: "Stars"
+		};
+
+		for (const actNumber of [1, 2, 3, 4]) {
+			const button = document.createElement("button");
+			button.setAttribute("data-act", actNumber.toString());
+			button.textContent = actNumber.toString();
+			button.setAttribute("aria-label", `Act ${actNumber} - ${actNames[actNumber as keyof typeof actNames]}`);
+			button.addEventListener("click", () => {
+				this.app.setAct(actNumber);
+				console.log(`Navigating to Act ${actNumber}`); // Debug log
+			});
+
+			// Add ripple effect
+			button.addEventListener("click", (e) => {
+				const rect = button.getBoundingClientRect();
+				const circle = document.createElement("div");
+				circle.style.cssText = `
+					position: absolute;
+					background: rgba(255, 255, 255, 0.3);
+					border-radius: 50%;
+					pointer-events: none;
+					width: 100px;
+					height: 100px;
+					left: ${e.clientX - rect.left - 50}px;
+					top: ${e.clientY - rect.top - 50}px;
+					transform: scale(0);
+					animation: ripple 0.6s linear;
+				`;
+
+				button.appendChild(circle);
+				setTimeout(() => circle.remove(), 600);
+			});
+
+			mobileNav.appendChild(button);
+		}
+
+		// Add to body last to ensure all setup is complete
+		document.body.appendChild(mobileNav);
+		this.mobileNav = mobileNav;
+
+		// Force a position update
+		requestAnimationFrame(() => {
+			this.updateMobileNav(1); // Set initial active state
+			console.log("Mobile navigation initialized"); // Debug log
+		});
+	}
+
+	private updateMobileNav(actNumber: number): void {
+		if (!this.mobileNav) return;
+
+		// Update active state of mobile nav buttons
+		for (const button of this.mobileNav.querySelectorAll("button")) {
+			if (button instanceof HTMLElement) {
+				button.classList.toggle(
+					"active",
+					button.getAttribute("data-act") === actNumber.toString(),
+				);
+			}
 		}
 	}
 }
