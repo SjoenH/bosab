@@ -1,118 +1,138 @@
 .mobile-nav {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    z-index: 10000;  /* Ensure it's above other UI elements */
-    touch-action: manipulation;
-    pointer-events: auto;  /* Ensure clickability */
+	position: fixed;
+	bottom: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	gap: 12px;
+	background: rgba(0, 0, 0, 0.8);
+	padding: 12px;
+	border-radius: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	backdrop-filter: blur(10px);
+	z-index: 10000; /* Ensure it's above other UI elements */
+	touch-action: manipulation;
+	pointer-events: auto; /* Ensure clickability */
 }
 
 .mobile-nav button {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    touch-action: manipulation;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
+	width: 60px;
+	height: 60px;
+	border-radius: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	font-size: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	touch-action: manipulation;
+	cursor: pointer;
+	position: relative;
+	overflow: hidden;
 }
 
 .mobile-nav button::after {
-    content: attr(aria-label);
-    position: absolute;
-    top: -25px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    white-space: nowrap;
+	content: attr(aria-label);
+	position: absolute;
+	top: -25px;
+	left: 50%;
+	transform: translateX(-50%) translateY(10px);
+	background: rgba(0, 0, 0, 0.8);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	opacity: 0;
+	pointer-events: none;
+	transition: all 0.3s ease;
+	white-space: nowrap;
 }
 
 .mobile-nav button:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
 }
 
 .mobile-nav button:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.2);
+	transform: scale(0.95);
+	background: rgba(255, 255, 255, 0.2);
 }
 
 .mobile-nav button.active {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
-    transform: scale(1.1);
+	background: rgba(255, 255, 255, 0.2);
+	border-color: rgba(255, 255, 255, 0.6);
+	transform: scale(1.1);
 }
 
 .mobile-nav button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.05);
+	background: rgba(255, 255, 255, 0.15);
+	border-color: rgba(255, 255, 255, 0.5);
+	transform: scale(1.05);
 }
 
 /* Act-specific colors on hover */
-.mobile-nav button[data-act="1"]:hover { border-color: #00ff41; } /* Matrix green */
-.mobile-nav button[data-act="2"]:hover { border-color: #d4a574; } /* Desert sand */
-.mobile-nav button[data-act="3"]:hover { border-color: #ff6b9d; } /* Human pink */
-.mobile-nav button[data-act="4"]:hover { border-color: #4dabf7; } /* Cosmic blue */
+.mobile-nav button[data-act="1"]:hover {
+	border-color: #00ff41;
+} /* Matrix green */
+.mobile-nav button[data-act="2"]:hover {
+	border-color: #d4a574;
+} /* Desert sand */
+.mobile-nav button[data-act="3"]:hover {
+	border-color: #ff6b9d;
+} /* Human pink */
+.mobile-nav button[data-act="4"]:hover {
+	border-color: #4dabf7;
+} /* Cosmic blue */
 
 /* Act-specific colors when active */
-.mobile-nav button[data-act="1"].active { border-color: #00ff41; background: rgba(0, 255, 65, 0.2); }
-.mobile-nav button[data-act="2"].active { border-color: #d4a574; background: rgba(212, 165, 116, 0.2); }
-.mobile-nav button[data-act="3"].active { border-color: #ff6b9d; background: rgba(255, 107, 157, 0.2); }
-.mobile-nav button[data-act="4"].active { border-color: #4dabf7; background: rgba(77, 171, 247, 0.2); }
+.mobile-nav button[data-act="1"].active {
+	border-color: #00ff41;
+	background: rgba(0, 255, 65, 0.2);
+}
+.mobile-nav button[data-act="2"].active {
+	border-color: #d4a574;
+	background: rgba(212, 165, 116, 0.2);
+}
+.mobile-nav button[data-act="3"].active {
+	border-color: #ff6b9d;
+	background: rgba(255, 107, 157, 0.2);
+}
+.mobile-nav button[data-act="4"].active {
+	border-color: #4dabf7;
+	background: rgba(77, 171, 247, 0.2);
+}
 
 .mobile-nav button[data-act="1"] {
-  border-color: #00ff41;
+	border-color: #00ff41;
 }
 
 .mobile-nav button[data-act="2"] {
-  border-color: #d4a574;
+	border-color: #d4a574;
 }
 
 .mobile-nav button[data-act="3"] {
-  border-color: #ff6b9d;
+	border-color: #ff6b9d;
 }
 
 .mobile-nav button[data-act="4"] {
-  border-color: #4dabf7;
+	border-color: #4dabf7;
 }
 
 .mobile-nav button[data-act].active {
-  background: rgba(255, 255, 255, 0.3);
+	background: rgba(255, 255, 255, 0.3);
 }
 
 @keyframes ripple {
-    0% {
-        transform: scale(0);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 0;
-    }
+	0% {
+		transform: scale(0);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1);
+		opacity: 0;
+	}
 }
 
 /* Show navigation at all screen sizes */

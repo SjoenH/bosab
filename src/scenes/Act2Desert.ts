@@ -3,8 +3,8 @@
  */
 
 import * as THREE from "three";
-import { BaseAct } from "./BaseAct";
 import { TextureUtils } from "../utils/TextureUtils";
+import { BaseAct } from "./BaseAct";
 
 export class Act2Desert extends BaseAct {
 	// General Scene Parameters
@@ -158,14 +158,17 @@ export class Act2Desert extends BaseAct {
 	private readonly STREAK_VISUAL_SIZE_WIND_FACTOR = 0.05;
 	private readonly STREAK_VISUAL_SIZE_VOLUME_FACTOR = 0.02;
 
-
 	private particleGeometry: THREE.BufferGeometry = new THREE.BufferGeometry();
 	private particleMaterial: THREE.PointsMaterial = new THREE.PointsMaterial();
 	private initialPositions: Float32Array = new Float32Array(
 		this.TERRAIN_PARTICLE_COUNT * 3,
 	);
-	private velocities: Float32Array = new Float32Array(this.TERRAIN_PARTICLE_COUNT * 3);
-	private turbulence: Float32Array = new Float32Array(this.TERRAIN_PARTICLE_COUNT * 3);
+	private velocities: Float32Array = new Float32Array(
+		this.TERRAIN_PARTICLE_COUNT * 3,
+	);
+	private turbulence: Float32Array = new Float32Array(
+		this.TERRAIN_PARTICLE_COUNT * 3,
+	);
 	private lastHeartbeat = 0;
 	// private heartbeatInterval = 1000; // Now: this.HEARTBEAT_INTERVAL_MS
 	private windDirection: THREE.Vector2 = new THREE.Vector2(1, 0);
@@ -235,9 +238,17 @@ export class Act2Desert extends BaseAct {
 			const angle = Math.atan2(z, x);
 
 			// More pronounced dune patterns
-			const dune1 = Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
-			const dune2 = Math.sin(angle * this.DUNE_ANGLE_MULT_2 + distanceFromCenter * this.DUNE_FREQ_2) * this.DUNE_AMP_2;
-			const dune3 = Math.sin(x * this.DUNE_X_FREQ_3) * Math.cos(z * this.DUNE_Z_FREQ_3) * this.DUNE_AMP_3;
+			const dune1 =
+				Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
+			const dune2 =
+				Math.sin(
+					angle * this.DUNE_ANGLE_MULT_2 +
+						distanceFromCenter * this.DUNE_FREQ_2,
+				) * this.DUNE_AMP_2;
+			const dune3 =
+				Math.sin(x * this.DUNE_X_FREQ_3) *
+				Math.cos(z * this.DUNE_Z_FREQ_3) *
+				this.DUNE_AMP_3;
 
 			// Y is now the height of the dunes
 			const y = dune1 + dune2 + dune3;
@@ -252,13 +263,17 @@ export class Act2Desert extends BaseAct {
 			positions[i * 3 + 2] = this.initialPositions[i * 3 + 2] = z;
 
 			// Initialize velocities
-			this.velocities[i * 3] = (Math.random() - 0.5) * this.TERRAIN_VELOCITY_XZ_FACTOR;
-			this.velocities[i * 3 + 1] = (Math.random() - 0.5) * this.TERRAIN_VELOCITY_Y_FACTOR;
-			this.velocities[i * 3 + 2] = (Math.random() - 0.5) * this.TERRAIN_VELOCITY_XZ_FACTOR;
+			this.velocities[i * 3] =
+				(Math.random() - 0.5) * this.TERRAIN_VELOCITY_XZ_FACTOR;
+			this.velocities[i * 3 + 1] =
+				(Math.random() - 0.5) * this.TERRAIN_VELOCITY_Y_FACTOR;
+			this.velocities[i * 3 + 2] =
+				(Math.random() - 0.5) * this.TERRAIN_VELOCITY_XZ_FACTOR;
 
 			// Initialize turbulence
 			this.turbulence[i * 3] = Math.random();
-			this.turbulence[i * 3 + 1] = Math.random() * this.TERRAIN_TURBULENCE_Y_FACTOR;
+			this.turbulence[i * 3 + 1] =
+				Math.random() * this.TERRAIN_TURBULENCE_Y_FACTOR;
 			this.turbulence[i * 3 + 2] = Math.random();
 		}
 
@@ -302,30 +317,46 @@ export class Act2Desert extends BaseAct {
 			const distanceFromCenter = Math.sqrt(dustX * dustX + dustZ * dustZ);
 			const angle = Math.atan2(dustZ, dustX);
 
-			const dune1 = Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
-			const dune2 = Math.sin(angle * this.DUNE_ANGLE_MULT_2 + distanceFromCenter * this.DUNE_FREQ_2) * this.DUNE_AMP_2;
-			const dune3 = Math.sin(dustX * this.DUNE_X_FREQ_3) * Math.cos(dustZ * this.DUNE_Z_FREQ_3) * this.DUNE_AMP_3;
+			const dune1 =
+				Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
+			const dune2 =
+				Math.sin(
+					angle * this.DUNE_ANGLE_MULT_2 +
+						distanceFromCenter * this.DUNE_FREQ_2,
+				) * this.DUNE_AMP_2;
+			const dune3 =
+				Math.sin(dustX * this.DUNE_X_FREQ_3) *
+				Math.cos(dustZ * this.DUNE_Z_FREQ_3) *
+				this.DUNE_AMP_3;
 
 			const terrainHeight = dune1 + dune2 + dune3;
 			// const spawnHeightRange = 15; // Now: this.DUST_SPAWN_HEIGHT_RANGE
 
 			// Start at terrain height + random height for more vertical spread
-			this.dustPositions[i3 + 1] = terrainHeight + Math.random() * this.DUST_SPAWN_HEIGHT_RANGE + this.DUST_SPAWN_Y_OFFSET;
+			this.dustPositions[i3 + 1] =
+				terrainHeight +
+				Math.random() * this.DUST_SPAWN_HEIGHT_RANGE +
+				this.DUST_SPAWN_Y_OFFSET;
 
 			// Bias Z position towards behind camera (negative Z values if camera looks towards positive Z)
 			// Mix of behind camera (70%) and some in front (30%) for natural distribution
 			if (Math.random() < this.DUST_BEHIND_CAMERA_RATIO) {
 				// Behind camera - farther Z values
-				this.dustPositions[i3 + 2] = - (Math.random() * this.DUST_BEHIND_CAMERA_Z_MAX_OFFSET + this.DUST_BEHIND_CAMERA_Z_MIN_OFFSET);
+				this.dustPositions[i3 + 2] = -(
+					Math.random() * this.DUST_BEHIND_CAMERA_Z_MAX_OFFSET +
+					this.DUST_BEHIND_CAMERA_Z_MIN_OFFSET
+				);
 			} else {
 				// Some in front for natural mixing
 				this.dustPositions[i3 + 2] = dustZ; // Use the calculated z position
 			}
 
 			// Initial velocities mostly horizontal, with some randomness
-			this.dustVelocities[i3] = (Math.random() - 0.5) * this.DUST_INITIAL_VELOCITY_XZ_FACTOR; // x velocity
+			this.dustVelocities[i3] =
+				(Math.random() - 0.5) * this.DUST_INITIAL_VELOCITY_XZ_FACTOR; // x velocity
 			this.dustVelocities[i3 + 1] = 0; // No initial vertical velocity for dust
-			this.dustVelocities[i3 + 2] = (Math.random() - 0.5) * this.DUST_INITIAL_VELOCITY_XZ_FACTOR; // z velocity
+			this.dustVelocities[i3 + 2] =
+				(Math.random() - 0.5) * this.DUST_INITIAL_VELOCITY_XZ_FACTOR; // z velocity
 		}
 		this.dustParticleGeometry.setAttribute(
 			"position",
@@ -365,7 +396,10 @@ export class Act2Desert extends BaseAct {
 				height: this.STREAK_TEXTURE_RECT_HEIGHT,
 			},
 			rotation: this.STREAK_TEXTURE_ROTATION_RADIANS,
-			translate: { x: this.STREAK_TEXTURE_CENTER_TRANSLATE, y: this.STREAK_TEXTURE_CENTER_TRANSLATE },
+			translate: {
+				x: this.STREAK_TEXTURE_CENTER_TRANSLATE,
+				y: this.STREAK_TEXTURE_CENTER_TRANSLATE,
+			},
 		});
 
 		// Initialize wind streak particle system
@@ -378,14 +412,19 @@ export class Act2Desert extends BaseAct {
 
 		for (let i = 0; i < this.STREAK_PARTICLE_COUNT; i++) {
 			const i3 = i * 3;
-			this.streakPositions[i3] = (Math.random() - 0.5) * this.STREAK_SPREAD_AREA; // x
+			this.streakPositions[i3] =
+				(Math.random() - 0.5) * this.STREAK_SPREAD_AREA; // x
 			this.streakPositions[i3 + 1] =
-				this.STREAK_Y_MIN_SPAWN + Math.random() * (this.STREAK_Y_MAX_SPAWN - this.STREAK_Y_MIN_SPAWN); // y
-			this.streakPositions[i3 + 2] = (Math.random() - 0.5) * this.STREAK_SPREAD_AREA; // z
+				this.STREAK_Y_MIN_SPAWN +
+				Math.random() * (this.STREAK_Y_MAX_SPAWN - this.STREAK_Y_MIN_SPAWN); // y
+			this.streakPositions[i3 + 2] =
+				(Math.random() - 0.5) * this.STREAK_SPREAD_AREA; // z
 
-			this.streakVelocities[i3] = (Math.random() - 0.5) * this.STREAK_INITIAL_VELOCITY_XZ_FACTOR; // Initial horizontal velocity
+			this.streakVelocities[i3] =
+				(Math.random() - 0.5) * this.STREAK_INITIAL_VELOCITY_XZ_FACTOR; // Initial horizontal velocity
 			this.streakVelocities[i3 + 1] = 0; // No initial vertical velocity
-			this.streakVelocities[i3 + 2] = (Math.random() - 0.5) * this.STREAK_INITIAL_VELOCITY_XZ_FACTOR; // Initial horizontal velocity
+			this.streakVelocities[i3 + 2] =
+				(Math.random() - 0.5) * this.STREAK_INITIAL_VELOCITY_XZ_FACTOR; // Initial horizontal velocity
 		}
 		this.streakParticleGeometry.setAttribute(
 			"position",
@@ -393,7 +432,9 @@ export class Act2Desert extends BaseAct {
 		);
 
 		this.streakParticleMaterial.size = this.STREAK_PARTICLE_BASE_SIZE;
-		this.streakParticleMaterial.color = new THREE.Color(this.STREAK_PARTICLE_COLOR);
+		this.streakParticleMaterial.color = new THREE.Color(
+			this.STREAK_PARTICLE_COLOR,
+		);
 		this.streakParticleMaterial.transparent = true;
 		this.streakParticleMaterial.opacity = this.STREAK_PARTICLE_BASE_OPACITY;
 		this.streakParticleMaterial.blending = THREE.AdditiveBlending;
@@ -413,25 +454,39 @@ export class Act2Desert extends BaseAct {
 		if (this.particles.length === 0) return;
 
 		const deltaSeconds = deltaTime / 1000; // Standard conversion, not a magic number for config
-		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_UPDATE);
-		const volume = this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_UPDATE);
+		const bassLevel = this.getSmoothedAudio(
+			"bass",
+			this.AUDIO_SMOOTH_BASS_UPDATE,
+		);
+		const volume = this.getSmoothedAudio(
+			"volume",
+			this.AUDIO_SMOOTH_VOLUME_UPDATE,
+		);
 		const midLevel = this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_UPDATE);
 
 		// Update wind direction based on audio (for glow effects only)
-		this.windDirection.x += (Math.random() - 0.5) * this.WIND_DIR_CHANGE_FACTOR * volume;
-		this.windDirection.y += (Math.random() - 0.5) * this.WIND_DIR_CHANGE_FACTOR * volume;
+		this.windDirection.x +=
+			(Math.random() - 0.5) * this.WIND_DIR_CHANGE_FACTOR * volume;
+		this.windDirection.y +=
+			(Math.random() - 0.5) * this.WIND_DIR_CHANGE_FACTOR * volume;
 		this.windDirection.normalize();
 
 		// Update wind strength - more sensitive (for glow effects only)
 		this.windStrength = Math.max(
 			0,
-			Math.min(1, this.windStrength + (volume - this.WIND_STRENGTH_SENSITIVITY_THRESHOLD) * this.WIND_STRENGTH_UPDATE_FACTOR),
+			Math.min(
+				1,
+				this.windStrength +
+					(volume - this.WIND_STRENGTH_SENSITIVITY_THRESHOLD) *
+						this.WIND_STRENGTH_UPDATE_FACTOR,
+			),
 		);
 
 		// Detect heartbeat (for glow effects only)
 		if (
 			bassLevel > this.HEARTBEAT_BASS_THRESHOLD &&
-			this.time - this.lastHeartbeat > this.HEARTBEAT_INTERVAL_MS * this.HEARTBEAT_INTERVAL_MULTIPLIER
+			this.time - this.lastHeartbeat >
+				this.HEARTBEAT_INTERVAL_MS * this.HEARTBEAT_INTERVAL_MULTIPLIER
 		) {
 			this.lastHeartbeat = this.time;
 		}
@@ -444,10 +499,17 @@ export class Act2Desert extends BaseAct {
 			// Calculate audio-reactive vertical movement
 			// const cameraMovementAmplitude = 3; // Now: this.CAMERA_MOVEMENT_AMPLITUDE
 			const bassMovement = bassLevel * this.CAMERA_MOVEMENT_AMPLITUDE;
-			const volumeMovement = volume * this.CAMERA_MOVEMENT_AMPLITUDE * this.CAMERA_VOLUME_MOVEMENT_SCALE;
+			const volumeMovement =
+				volume *
+				this.CAMERA_MOVEMENT_AMPLITUDE *
+				this.CAMERA_VOLUME_MOVEMENT_SCALE;
 
 			// Combine movements with slight randomness for organic feel
-			const totalMovement = bassMovement + volumeMovement + Math.sin(this.time * this.CAMERA_TIME_MOVEMENT_FREQ) * this.CAMERA_TIME_MOVEMENT_AMP;
+			const totalMovement =
+				bassMovement +
+				volumeMovement +
+				Math.sin(this.time * this.CAMERA_TIME_MOVEMENT_FREQ) *
+					this.CAMERA_TIME_MOVEMENT_AMP;
 
 			// Create vertical offset vector
 			const cameraOffset = new THREE.Vector3(0, totalMovement, 0);
@@ -470,7 +532,9 @@ export class Act2Desert extends BaseAct {
 
 			// Wind influence on dust
 			const dustWindForceFactor = this.windStrength * this.DUST_WIND_BASE_SPEED;
-			const particleWindResponsiveness = this.DUST_WIND_RESPONSIVENESS_MIN + Math.random() * this.DUST_WIND_RESPONSIVENESS_RANGE;
+			const particleWindResponsiveness =
+				this.DUST_WIND_RESPONSIVENESS_MIN +
+				Math.random() * this.DUST_WIND_RESPONSIVENESS_RANGE;
 			// const sidewindAmplification = 2.0; // Now: this.DUST_SIDEWIND_AMPLIFICATION
 
 			// Apply wind forces
@@ -499,9 +563,17 @@ export class Act2Desert extends BaseAct {
 			const distanceFromCenter = Math.sqrt(dustX * dustX + dustZ * dustZ);
 			const angle = Math.atan2(dustZ, dustX);
 
-			const dune1 = Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
-			const dune2 = Math.sin(angle * this.DUNE_ANGLE_MULT_2 + distanceFromCenter * this.DUNE_FREQ_2) * this.DUNE_AMP_2;
-			const dune3 = Math.sin(dustX * this.DUNE_X_FREQ_3) * Math.cos(dustZ * this.DUNE_Z_FREQ_3) * this.DUNE_AMP_3;
+			const dune1 =
+				Math.sin(distanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
+			const dune2 =
+				Math.sin(
+					angle * this.DUNE_ANGLE_MULT_2 +
+						distanceFromCenter * this.DUNE_FREQ_2,
+				) * this.DUNE_AMP_2;
+			const dune3 =
+				Math.sin(dustX * this.DUNE_X_FREQ_3) *
+				Math.cos(dustZ * this.DUNE_Z_FREQ_3) *
+				this.DUNE_AMP_3;
 
 			const terrainHeight = dune1 + dune2 + dune3;
 			// const dustFlowHeight = 0.8; // Now: this.DUST_FLOW_HEIGHT_ABOVE_TERRAIN
@@ -509,10 +581,14 @@ export class Act2Desert extends BaseAct {
 
 			// If dust particle is below terrain + flow height, push it up and add upward velocity
 			if (dustPosArray[i3 + 1] < minDustHeight) {
-				dustPosArray[i3 + 1] = minDustHeight + Math.random() * this.DUST_TERRAIN_COLLISION_Y_RANDOM_ADD;
+				dustPosArray[i3 + 1] =
+					minDustHeight +
+					Math.random() * this.DUST_TERRAIN_COLLISION_Y_RANDOM_ADD;
 
 				// Add upward velocity when hitting terrain to simulate bouncing/flowing upward
-				this.dustVelocities[i3 + 1] += this.DUST_TERRAIN_COLLISION_UPWARD_VEL_MIN + Math.random() * this.DUST_TERRAIN_COLLISION_UPWARD_VEL_RAND_ADD;
+				this.dustVelocities[i3 + 1] +=
+					this.DUST_TERRAIN_COLLISION_UPWARD_VEL_MIN +
+					Math.random() * this.DUST_TERRAIN_COLLISION_UPWARD_VEL_RAND_ADD;
 
 				// Reduce horizontal velocity slightly due to terrain friction
 				this.dustVelocities[i3] *= this.DUST_TERRAIN_FRICTION_FACTOR;
@@ -520,7 +596,8 @@ export class Act2Desert extends BaseAct {
 			}
 
 			// Add gravity to pull dust down naturally
-			this.dustVelocities[i3 + 1] -= this.DUST_GRAVITY_ACCELERATION * deltaSeconds;
+			this.dustVelocities[i3 + 1] -=
+				this.DUST_GRAVITY_ACCELERATION * deltaSeconds;
 
 			// Damping
 			this.dustVelocities[i3] *= this.DUST_DAMPING_XZ;
@@ -531,27 +608,41 @@ export class Act2Desert extends BaseAct {
 			let resetParticle = false;
 
 			if (dustPosArray[i3] > this.DUST_BLOW_AWAY_LIMIT) {
-				dustPosArray[i3] = -this.DUST_BLOW_AWAY_LIMIT - Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
+				dustPosArray[i3] =
+					-this.DUST_BLOW_AWAY_LIMIT -
+					Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
 				resetParticle = true;
 			} else if (dustPosArray[i3] < -this.DUST_BLOW_AWAY_LIMIT) {
-				dustPosArray[i3] = this.DUST_BLOW_AWAY_LIMIT + Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
+				dustPosArray[i3] =
+					this.DUST_BLOW_AWAY_LIMIT +
+					Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
 				resetParticle = true;
 			}
 
 			if (dustPosArray[i3 + 2] > this.DUST_BLOW_AWAY_LIMIT) {
-				dustPosArray[i3 + 2] = -this.DUST_BLOW_AWAY_LIMIT - Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
+				dustPosArray[i3 + 2] =
+					-this.DUST_BLOW_AWAY_LIMIT -
+					Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
 				resetParticle = true;
 			} else if (dustPosArray[i3 + 2] < -this.DUST_BLOW_AWAY_LIMIT) {
-				dustPosArray[i3 + 2] = this.DUST_BLOW_AWAY_LIMIT + Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
+				dustPosArray[i3 + 2] =
+					this.DUST_BLOW_AWAY_LIMIT +
+					Math.random() * this.DUST_RESET_BOUNDARY_RANDOM_OFFSET;
 				resetParticle = true;
 			}
 
 			if (resetParticle) {
 				// Randomize the other coordinate to avoid particle lines
 				if (Math.abs(this.windDirection.x) > Math.abs(this.windDirection.y)) {
-					dustPosArray[i3 + 2] = (Math.random() - 0.5) * this.DUST_BLOW_AWAY_LIMIT * this.DUST_RESET_OTHER_COORD_SCALE_FACTOR;
+					dustPosArray[i3 + 2] =
+						(Math.random() - 0.5) *
+						this.DUST_BLOW_AWAY_LIMIT *
+						this.DUST_RESET_OTHER_COORD_SCALE_FACTOR;
 				} else {
-					dustPosArray[i3] = (Math.random() - 0.5) * this.DUST_BLOW_AWAY_LIMIT * this.DUST_RESET_OTHER_COORD_SCALE_FACTOR;
+					dustPosArray[i3] =
+						(Math.random() - 0.5) *
+						this.DUST_BLOW_AWAY_LIMIT *
+						this.DUST_RESET_OTHER_COORD_SCALE_FACTOR;
 				}
 
 				// Calculate terrain height at new position for proper spawning
@@ -560,19 +651,36 @@ export class Act2Desert extends BaseAct {
 				const newDistanceFromCenter = Math.sqrt(newX * newX + newZ * newZ);
 				const newAngle = Math.atan2(newZ, newX);
 
-				const newDune1 = Math.sin(newDistanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
-				const newDune2 = Math.sin(newAngle * this.DUNE_ANGLE_MULT_2 + newDistanceFromCenter * this.DUNE_FREQ_2) * this.DUNE_AMP_2;
-				const newDune3 = Math.sin(newX * this.DUNE_X_FREQ_3) * Math.cos(newZ * this.DUNE_Z_FREQ_3) * this.DUNE_AMP_3;
+				const newDune1 =
+					Math.sin(newDistanceFromCenter * this.DUNE_FREQ_1) * this.DUNE_AMP_1;
+				const newDune2 =
+					Math.sin(
+						newAngle * this.DUNE_ANGLE_MULT_2 +
+							newDistanceFromCenter * this.DUNE_FREQ_2,
+					) * this.DUNE_AMP_2;
+				const newDune3 =
+					Math.sin(newX * this.DUNE_X_FREQ_3) *
+					Math.cos(newZ * this.DUNE_Z_FREQ_3) *
+					this.DUNE_AMP_3;
 
 				const newTerrainHeight = newDune1 + newDune2 + newDune3;
-				const spawnHeight = this.DUST_RESET_SPAWN_HEIGHT_MIN_ABOVE_TERRAIN + Math.random() * this.DUST_RESET_SPAWN_HEIGHT_RAND_ADD;
+				const spawnHeight =
+					this.DUST_RESET_SPAWN_HEIGHT_MIN_ABOVE_TERRAIN +
+					Math.random() * this.DUST_RESET_SPAWN_HEIGHT_RAND_ADD;
 
 				dustPosArray[i3 + 1] = newTerrainHeight + spawnHeight;
 
 				// Reset velocities
-				this.dustVelocities[i3] = -Math.sign(dustPosArray[i3]) * Math.random() * this.DUST_RESET_VELOCITY_XZ_FACTOR;
-				this.dustVelocities[i3 + 2] = -Math.sign(dustPosArray[i3 + 2]) * Math.random() * this.DUST_RESET_VELOCITY_XZ_FACTOR;
-				this.dustVelocities[i3 + 1] = (Math.random() - 0.5) * this.DUST_RESET_VELOCITY_Y_FACTOR;
+				this.dustVelocities[i3] =
+					-Math.sign(dustPosArray[i3]) *
+					Math.random() *
+					this.DUST_RESET_VELOCITY_XZ_FACTOR;
+				this.dustVelocities[i3 + 2] =
+					-Math.sign(dustPosArray[i3 + 2]) *
+					Math.random() *
+					this.DUST_RESET_VELOCITY_XZ_FACTOR;
+				this.dustVelocities[i3 + 1] =
+					(Math.random() - 0.5) * this.DUST_RESET_VELOCITY_Y_FACTOR;
 			}
 
 			// Vertical boundary clamping - only enforce upper limit now, lower limit handled by terrain collision
@@ -585,33 +693,56 @@ export class Act2Desert extends BaseAct {
 	}
 
 	protected updateVisualEffects(deltaTime: number): void {
-		const volume = this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_EFFECTS);
-		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_EFFECTS);
-		const midLevel = this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_EFFECTS);
+		const volume = this.getSmoothedAudio(
+			"volume",
+			this.AUDIO_SMOOTH_VOLUME_EFFECTS,
+		);
+		const bassLevel = this.getSmoothedAudio(
+			"bass",
+			this.AUDIO_SMOOTH_BASS_EFFECTS,
+		);
+		const midLevel = this.getSmoothedAudio(
+			"mid",
+			this.AUDIO_SMOOTH_MID_EFFECTS,
+		);
 
 		// Sunset-like color variations with enhanced contrast
-		const hue = this.TERRAIN_VISUAL_HUE_BASE + midLevel * this.TERRAIN_VISUAL_HUE_MID_FACTOR;
-		const saturation = this.TERRAIN_VISUAL_SAT_BASE + bassLevel * this.TERRAIN_VISUAL_SAT_BASS_FACTOR;
-		const lightness = this.TERRAIN_VISUAL_LGT_BASE + volume * this.TERRAIN_VISUAL_LGT_VOLUME_FACTOR;
+		const hue =
+			this.TERRAIN_VISUAL_HUE_BASE +
+			midLevel * this.TERRAIN_VISUAL_HUE_MID_FACTOR;
+		const saturation =
+			this.TERRAIN_VISUAL_SAT_BASE +
+			bassLevel * this.TERRAIN_VISUAL_SAT_BASS_FACTOR;
+		const lightness =
+			this.TERRAIN_VISUAL_LGT_BASE +
+			volume * this.TERRAIN_VISUAL_LGT_VOLUME_FACTOR;
 		this.particleMaterial.color.setHSL(hue, saturation, lightness);
 
 		// Dynamic particle size and opacity for dusty wind effect - more pronounced
 		this.particleMaterial.opacity = Math.min(
 			this.TERRAIN_VISUAL_OPACITY_MAX,
-			this.TERRAIN_VISUAL_OPACITY_BASE + this.windStrength * this.TERRAIN_VISUAL_OPACITY_WIND_FACTOR + bassLevel * this.TERRAIN_VISUAL_OPACITY_BASS_FACTOR,
+			this.TERRAIN_VISUAL_OPACITY_BASE +
+				this.windStrength * this.TERRAIN_VISUAL_OPACITY_WIND_FACTOR +
+				bassLevel * this.TERRAIN_VISUAL_OPACITY_BASS_FACTOR,
 		);
 		this.particleMaterial.size = Math.max(
 			this.TERRAIN_VISUAL_SIZE_MIN,
-			this.TERRAIN_VISUAL_SIZE_BASE + volume * this.TERRAIN_VISUAL_SIZE_VOLUME_FACTOR + this.windStrength * this.TERRAIN_VISUAL_SIZE_WIND_FACTOR + bassLevel * this.TERRAIN_VISUAL_SIZE_BASS_FACTOR,
+			this.TERRAIN_VISUAL_SIZE_BASE +
+				volume * this.TERRAIN_VISUAL_SIZE_VOLUME_FACTOR +
+				this.windStrength * this.TERRAIN_VISUAL_SIZE_WIND_FACTOR +
+				bassLevel * this.TERRAIN_VISUAL_SIZE_BASS_FACTOR,
 		);
 
 		// Update dust particle visuals with depth-based culling effect
 		if (this.dustParticleMaterial) {
 			// Get camera position for depth calculations
-			const cameraPosition = this.scene?.getObjectByName('camera')?.position || new THREE.Vector3(0, this.DEFAULT_CAMERA_Y_FOR_DEPTH_EFFECT, 0);
+			const cameraPosition =
+				this.scene?.getObjectByName("camera")?.position ||
+				new THREE.Vector3(0, this.DEFAULT_CAMERA_Y_FOR_DEPTH_EFFECT, 0);
 
 			// Apply depth-based opacity culling to individual particles
-			const dustPositions = this.dustParticleGeometry.attributes.position.array as Float32Array;
+			const dustPositions = this.dustParticleGeometry.attributes.position
+				.array as Float32Array;
 			const dustOpacities = new Float32Array(this.DUST_PARTICLE_COUNT);
 			const dustSizes = new Float32Array(this.DUST_PARTICLE_COUNT);
 
@@ -620,7 +751,7 @@ export class Act2Desert extends BaseAct {
 				const particlePos = new THREE.Vector3(
 					dustPositions[i3],
 					dustPositions[i3 + 1],
-					dustPositions[i3 + 2]
+					dustPositions[i3 + 2],
 				);
 
 				// Calculate distance from camera to particle
@@ -632,51 +763,96 @@ export class Act2Desert extends BaseAct {
 				// const minOpacity = 0.3;   // Now: this.DUST_DEPTH_CULL_MIN_OPACITY
 
 				// Calculate depth factor (1 = near/visible, 0 = far/faded)
-				const depthFactor = Math.max(0, Math.min(1,
-					(this.DUST_DEPTH_CULL_FAR_DISTANCE - distanceToCamera) / (this.DUST_DEPTH_CULL_FAR_DISTANCE - this.DUST_DEPTH_CULL_NEAR_DISTANCE)
-				));
+				const depthFactor = Math.max(
+					0,
+					Math.min(
+						1,
+						(this.DUST_DEPTH_CULL_FAR_DISTANCE - distanceToCamera) /
+							(this.DUST_DEPTH_CULL_FAR_DISTANCE -
+								this.DUST_DEPTH_CULL_NEAR_DISTANCE),
+					),
+				);
 
 				// Apply gentle falloff curve for more natural depth of field
-				const smoothDepthFactor = depthFactor * depthFactor * (this.SMOOTH_DEPTH_FACTOR_COEFF1 - this.SMOOTH_DEPTH_FACTOR_COEFF2 * depthFactor);
+				const smoothDepthFactor =
+					depthFactor *
+					depthFactor *
+					(this.SMOOTH_DEPTH_FACTOR_COEFF1 -
+						this.SMOOTH_DEPTH_FACTOR_COEFF2 * depthFactor);
 
 				// Base opacity from audio
-				const baseOpacityAudio = this.DUST_VISUAL_BASE_OPACITY_EFFECT + this.windStrength * this.DUST_VISUAL_OPACITY_WIND_FACTOR + midLevel * this.DUST_VISUAL_OPACITY_MID_FACTOR;
+				const baseOpacityAudio =
+					this.DUST_VISUAL_BASE_OPACITY_EFFECT +
+					this.windStrength * this.DUST_VISUAL_OPACITY_WIND_FACTOR +
+					midLevel * this.DUST_VISUAL_OPACITY_MID_FACTOR;
 
 				// Apply gentler depth culling to opacity (blend between minOpacity and full opacity)
 				const opacityRange = 1.0 - this.DUST_DEPTH_CULL_MIN_OPACITY;
-				dustOpacities[i] = Math.min(this.DUST_VISUAL_OPACITY_MAX, baseOpacityAudio * (this.DUST_DEPTH_CULL_MIN_OPACITY + opacityRange * smoothDepthFactor));
+				dustOpacities[i] = Math.min(
+					this.DUST_VISUAL_OPACITY_MAX,
+					baseOpacityAudio *
+						(this.DUST_DEPTH_CULL_MIN_OPACITY +
+							opacityRange * smoothDepthFactor),
+				);
 
 				// Much gentler size reduction with distance
-				const baseSizeAudio = this.DUST_VISUAL_BASE_SIZE_EFFECT + this.windStrength * this.DUST_VISUAL_SIZE_WIND_FACTOR + midLevel * this.DUST_VISUAL_SIZE_MID_FACTOR;
-				dustSizes[i] = Math.max(this.DUST_VISUAL_SIZE_MIN, baseSizeAudio * (this.DUST_VISUAL_SIZE_DEPTH_FACTOR_MIN_SCALE + this.DUST_VISUAL_SIZE_DEPTH_FACTOR_RANGE_SCALE * smoothDepthFactor));
+				const baseSizeAudio =
+					this.DUST_VISUAL_BASE_SIZE_EFFECT +
+					this.windStrength * this.DUST_VISUAL_SIZE_WIND_FACTOR +
+					midLevel * this.DUST_VISUAL_SIZE_MID_FACTOR;
+				dustSizes[i] = Math.max(
+					this.DUST_VISUAL_SIZE_MIN,
+					baseSizeAudio *
+						(this.DUST_VISUAL_SIZE_DEPTH_FACTOR_MIN_SCALE +
+							this.DUST_VISUAL_SIZE_DEPTH_FACTOR_RANGE_SCALE *
+								smoothDepthFactor),
+				);
 			}
 
 			// Apply the calculated values
 			// Note: For individual particle opacity/size, we'd need a custom shader
 			// For now, we'll use the average values with enhanced depth-based effects
-			const avgOpacity = dustOpacities.reduce((sum, val) => sum + val, 0) / this.DUST_PARTICLE_COUNT;
-			const avgSize = dustSizes.reduce((sum, val) => sum + val, 0) / this.DUST_PARTICLE_COUNT;
+			const avgOpacity =
+				dustOpacities.reduce((sum, val) => sum + val, 0) /
+				this.DUST_PARTICLE_COUNT;
+			const avgSize =
+				dustSizes.reduce((sum, val) => sum + val, 0) / this.DUST_PARTICLE_COUNT;
 
 			this.dustParticleMaterial.opacity = avgOpacity;
 			this.dustParticleMaterial.size = avgSize;
 
 			// Add subtle color shift for distant particles (atmospheric perspective)
-			const dustHue = this.DUST_VISUAL_HUE_BASE + midLevel * this.DUST_VISUAL_HUE_MID_FACTOR;
-			const dustSaturation = Math.max(this.DUST_VISUAL_SAT_MIN, this.DUST_VISUAL_SAT_BASE + bassLevel * this.DUST_VISUAL_SAT_BASS_FACTOR + (1 - avgOpacity) * this.DUST_VISUAL_SAT_OPACITY_FACTOR);
-			const dustLightness = this.DUST_VISUAL_LGT_BASE + volume * this.DUST_VISUAL_LGT_VOLUME_FACTOR;
-			this.dustParticleMaterial.color.setHSL(dustHue, dustSaturation, dustLightness);
+			const dustHue =
+				this.DUST_VISUAL_HUE_BASE + midLevel * this.DUST_VISUAL_HUE_MID_FACTOR;
+			const dustSaturation = Math.max(
+				this.DUST_VISUAL_SAT_MIN,
+				this.DUST_VISUAL_SAT_BASE +
+					bassLevel * this.DUST_VISUAL_SAT_BASS_FACTOR +
+					(1 - avgOpacity) * this.DUST_VISUAL_SAT_OPACITY_FACTOR,
+			);
+			const dustLightness =
+				this.DUST_VISUAL_LGT_BASE + volume * this.DUST_VISUAL_LGT_VOLUME_FACTOR;
+			this.dustParticleMaterial.color.setHSL(
+				dustHue,
+				dustSaturation,
+				dustLightness,
+			);
 		}
 
 		// Update wind streak visuals - more pronounced
 		if (this.streakParticleMaterial) {
 			this.streakParticleMaterial.opacity = Math.min(
 				this.STREAK_VISUAL_OPACITY_MAX,
-				this.STREAK_VISUAL_OPACITY_BASE + this.windStrength * this.STREAK_VISUAL_OPACITY_WIND_FACTOR + midLevel * this.STREAK_VISUAL_OPACITY_MID_FACTOR,
+				this.STREAK_VISUAL_OPACITY_BASE +
+					this.windStrength * this.STREAK_VISUAL_OPACITY_WIND_FACTOR +
+					midLevel * this.STREAK_VISUAL_OPACITY_MID_FACTOR,
 			);
 			// Size could also be dynamic, e.g., slightly larger with more wind
 			this.streakParticleMaterial.size = Math.max(
 				this.STREAK_VISUAL_SIZE_MIN,
-				this.STREAK_VISUAL_SIZE_BASE + this.windStrength * this.STREAK_VISUAL_SIZE_WIND_FACTOR + volume * this.STREAK_VISUAL_SIZE_VOLUME_FACTOR,
+				this.STREAK_VISUAL_SIZE_BASE +
+					this.windStrength * this.STREAK_VISUAL_SIZE_WIND_FACTOR +
+					volume * this.STREAK_VISUAL_SIZE_VOLUME_FACTOR,
 			);
 		}
 	}

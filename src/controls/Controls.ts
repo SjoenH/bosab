@@ -635,14 +635,17 @@ export class Controls {
 			1: "Matrix",
 			2: "Desert",
 			3: "Human",
-			4: "Stars"
+			4: "Stars",
 		};
 
 		for (const actNumber of [1, 2, 3, 4]) {
 			const button = document.createElement("button");
 			button.setAttribute("data-act", actNumber.toString());
 			button.textContent = actNumber.toString();
-			button.setAttribute("aria-label", `Act ${actNumber} - ${actNames[actNumber as keyof typeof actNames]}`);
+			button.setAttribute(
+				"aria-label",
+				`Act ${actNumber} - ${actNames[actNumber as keyof typeof actNames]}`,
+			);
 			button.addEventListener("click", () => {
 				this.app.setAct(actNumber);
 				console.log(`Navigating to Act ${actNumber}`); // Debug log

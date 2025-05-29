@@ -120,7 +120,12 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 	}
 
 	startSilentMode(): void {
-		if (!this.audioContext || !this.analyser || !this.compressor || !this.gainNode) {
+		if (
+			!this.audioContext ||
+			!this.analyser ||
+			!this.compressor ||
+			!this.gainNode
+		) {
 			return;
 		}
 
@@ -143,7 +148,12 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 	}
 
 	update(): void {
-		if (!this.isEnabled || !this.analyser || !this.dataArray || !this.gainNode) {
+		if (
+			!this.isEnabled ||
+			!this.analyser ||
+			!this.dataArray ||
+			!this.gainNode
+		) {
 			this.generateFallbackData();
 			return;
 		}
@@ -159,11 +169,13 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 		const rawVolume = Math.sqrt(sum / this.bufferLength) / 255;
 
 		// Auto-gain adjustment
-		if (this.autoGainEnabled && this.audioContext && this.gainNode) { // Added this.audioContext check
+		if (this.autoGainEnabled && this.audioContext && this.gainNode) {
+			// Added this.audioContext check
 			const currentGain = this.gainNode.gain.value;
 			let targetGain = currentGain;
 
-			if (rawVolume > 0.001) { // Avoid extreme adjustments with very low/zero volume
+			if (rawVolume > 0.001) {
+				// Avoid extreme adjustments with very low/zero volume
 				const error = this.targetVolume / rawVolume;
 				// Calculate desired gain, but don't let it explode if rawVolume is tiny
 				targetGain = currentGain * Math.sqrt(error); // Using sqrt for less aggressive adjustment
@@ -176,11 +188,15 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 			targetGain = Math.max(this.minGain, Math.min(this.maxGain, targetGain));
 
 			// Smoothly adjust gain towards the target
-			const newGain = currentGain + (targetGain - currentGain) * this.autoGainAdjustmentSpeed;
+			const newGain =
+				currentGain + (targetGain - currentGain) * this.autoGainAdjustmentSpeed;
 
 			// Check if audioContext is still valid before setting value
 			if (this.audioContext) {
-				this.gainNode.gain.setValueAtTime(newGain, this.audioContext.currentTime);
+				this.gainNode.gain.setValueAtTime(
+					newGain,
+					this.audioContext.currentTime,
+				);
 			}
 		}
 
@@ -192,7 +208,10 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 				this.inSilentMode = false;
 				console.log("🎤 Audio input detected, resuming normal mode");
 			}
-		} else if (!this.inSilentMode && currentTime - this.lastAudioTime > this.silenceTimeout) {
+		} else if (
+			!this.inSilentMode &&
+			currentTime - this.lastAudioTime > this.silenceTimeout
+		) {
 			console.log("🔇 No audio input detected, switching to silent mode");
 			this.inSilentMode = true;
 		}
@@ -271,14 +290,16 @@ export class AudioAnalyzer implements AudioAnalyzerInterface {
 		// Calculate target gain based on current volume and target volume
 		let targetGain =
 			this.gainNode.gain.value +
-			(this.targetVolume - rawVolume) *
-			this.autoGainAdjustmentSpeed;
+			(this.targetVolume - rawVolume) * this.autoGainAdjustmentSpeed;
 
 		// Clamp gain to min/max values
 		targetGain = Math.max(this.minGain, Math.min(this.maxGain, targetGain));
 
 		// Apply the gain adjustment
-		this.gainNode.gain.setValueAtTime(targetGain, this.audioContext?.currentTime || 0);
+		this.gainNode.gain.setValueAtTime(
+			targetGain,
+			this.audioContext?.currentTime || 0,
+		);
 	}
 
 	generateFallbackData(): void {

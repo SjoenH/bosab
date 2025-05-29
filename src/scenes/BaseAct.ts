@@ -500,7 +500,9 @@ export abstract class BaseAct implements BaseActInterface {
 
 		this.cameraEffectsEnabled = false;
 
-		console.log(`📷 Camera effects disabled for Act ${this.actNumber}, position restored`);
+		console.log(
+			`📷 Camera effects disabled for Act ${this.actNumber}, position restored`,
+		);
 	}
 
 	/**

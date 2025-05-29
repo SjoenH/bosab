@@ -6,8 +6,8 @@
  */
 
 import * as THREE from "three";
-import { BaseAct } from "./BaseAct";
 import { TextureUtils } from "../utils/TextureUtils";
+import { BaseAct } from "./BaseAct";
 
 export class Act4Stars extends BaseAct {
 	// Particle Counts
@@ -84,7 +84,11 @@ export class Act4Stars extends BaseAct {
 	);
 	private nebulaColors: Float32Array = new Float32Array(this.NEBULA_COUNT * 3);
 	private nebulaPhases: Float32Array = new Float32Array(this.NEBULA_COUNT);
-	private initialCameraPosition: THREE.Vector3 = new THREE.Vector3(0, 0, this.INITIAL_CAMERA_Z);
+	private initialCameraPosition: THREE.Vector3 = new THREE.Vector3(
+		0,
+		0,
+		this.INITIAL_CAMERA_Z,
+	);
 	// private driftAmplitude = 5; // Now: this.CAMERA_DRIFT_AMPLITUDE
 	// private driftSpeed = 0.0001; // Now: this.CAMERA_DRIFT_SPEED
 
@@ -97,7 +101,9 @@ export class Act4Stars extends BaseAct {
 			// Spherical distribution for stars - now more spread out and further back
 			const theta = Math.random() * Math.PI * 2;
 			const phi = Math.acos(Math.random() * 2 - 1);
-			const radius = (Math.random() ** this.STAR_RADIUS_POWER * this.STAR_RADIUS_RANGE) + this.STAR_RADIUS_MIN; // Pushed back and spread out more
+			const radius =
+				Math.random() ** this.STAR_RADIUS_POWER * this.STAR_RADIUS_RANGE +
+				this.STAR_RADIUS_MIN; // Pushed back and spread out more
 
 			const x = radius * Math.sin(phi) * Math.cos(theta);
 			const y = radius * Math.sin(phi) * Math.sin(theta);
@@ -110,9 +116,15 @@ export class Act4Stars extends BaseAct {
 
 			// Enhanced star colors with better contrast
 			const colorTemp = Math.random() * this.STAR_COLOR_TEMP_MAX; // Slightly more color variation
-			starColors[i3] = this.STAR_COLOR_BASE_BRIGHTNESS + colorTemp * this.STAR_COLOR_TEMP_FACTOR; // R - brighter base white
-			starColors[i3 + 1] = this.STAR_COLOR_BASE_BRIGHTNESS + colorTemp * this.STAR_COLOR_TEMP_FACTOR; // G
-			starColors[i3 + 2] = this.STAR_COLOR_BASE_BRIGHTNESS + colorTemp * this.STAR_COLOR_TEMP_FACTOR; // B
+			starColors[i3] =
+				this.STAR_COLOR_BASE_BRIGHTNESS +
+				colorTemp * this.STAR_COLOR_TEMP_FACTOR; // R - brighter base white
+			starColors[i3 + 1] =
+				this.STAR_COLOR_BASE_BRIGHTNESS +
+				colorTemp * this.STAR_COLOR_TEMP_FACTOR; // G
+			starColors[i3 + 2] =
+				this.STAR_COLOR_BASE_BRIGHTNESS +
+				colorTemp * this.STAR_COLOR_TEMP_FACTOR; // B
 		}
 
 		// Create nebula particles
@@ -122,7 +134,8 @@ export class Act4Stars extends BaseAct {
 			// More spread out distribution for nebulas
 			const theta = Math.random() * Math.PI * 2;
 			const phi = Math.acos(Math.random() * 2 - 1);
-			const radius = Math.random() * this.NEBULA_RADIUS_RANGE + this.NEBULA_RADIUS_MIN; // More spread out
+			const radius =
+				Math.random() * this.NEBULA_RADIUS_RANGE + this.NEBULA_RADIUS_MIN; // More spread out
 
 			const i3 = i * 3;
 			nebulaPositions[i3] = this.nebulaPositions[i3] =
@@ -134,8 +147,12 @@ export class Act4Stars extends BaseAct {
 
 			// More subtle nebula colors
 			const hue = this.NEBULA_HUE_BASE + Math.random() * this.NEBULA_HUE_RANGE; // Blue to purple
-			const saturation = this.NEBULA_SATURATION_BASE + Math.random() * this.NEBULA_SATURATION_RANGE; // Reduced saturation
-			const lightness = this.NEBULA_LIGHTNESS_BASE + Math.random() * this.NEBULA_LIGHTNESS_RANGE; // Darker
+			const saturation =
+				this.NEBULA_SATURATION_BASE +
+				Math.random() * this.NEBULA_SATURATION_RANGE; // Reduced saturation
+			const lightness =
+				this.NEBULA_LIGHTNESS_BASE +
+				Math.random() * this.NEBULA_LIGHTNESS_RANGE; // Darker
 			const color = new THREE.Color().setHSL(hue, saturation, lightness);
 
 			this.nebulaColors[i3] = color.r;
@@ -179,7 +196,10 @@ export class Act4Stars extends BaseAct {
 			this.NEBULA_TEXTURE_GRADIENT_CENTER,
 			[
 				[0, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_0_ALPHA})`],
-				[this.NEBULA_GRADIENT_STOP_1_POS, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_1_ALPHA})`],
+				[
+					this.NEBULA_GRADIENT_STOP_1_POS,
+					`rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_1_ALPHA})`,
+				],
 				[1, "rgba(255, 255, 255, 0)"],
 			],
 		);
@@ -220,8 +240,10 @@ export class Act4Stars extends BaseAct {
 			.array as Float32Array;
 
 		// Get audio levels for subtle reactivity
-		const volume = this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_CONTENT) ** 2; // Square for more subtlety
-		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_CONTENT) ** 2;
+		const volume =
+			this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_CONTENT) ** 2; // Square for more subtlety
+		const bassLevel =
+			this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_CONTENT) ** 2;
 
 		// Update nebula positions with extremely subtle drift
 		for (let i = 0; i < this.NEBULA_COUNT; i++) {
@@ -231,7 +253,8 @@ export class Act4Stars extends BaseAct {
 			this.nebulaPhases[i] += deltaSeconds * this.NEBULA_PHASE_SPEED_FACTOR;
 
 			// Apply extremely subtle vertical drift
-			const driftAmount = Math.sin(this.nebulaPhases[i]) * this.NEBULA_DRIFT_AMOUNT_FACTOR;
+			const driftAmount =
+				Math.sin(this.nebulaPhases[i]) * this.NEBULA_DRIFT_AMOUNT_FACTOR;
 			nebulaPositions[i3 + 2] = this.nebulaPositions[i3 + 2] + driftAmount;
 		}
 
@@ -241,23 +264,34 @@ export class Act4Stars extends BaseAct {
 
 	protected updateVisualEffects(deltaTime: number): void {
 		// Get audio levels for subtle visual effects
-		const midLevel = this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_EFFECTS) ** 2;
-		const trebleLevel = this.getSmoothedAudio("treble", this.AUDIO_SMOOTH_TREBLE_EFFECTS) ** 2;
-		const bassLevel = this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_EFFECTS) ** 2;
-		const volume = this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_EFFECTS) ** 2;
+		const midLevel =
+			this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_EFFECTS) ** 2;
+		const trebleLevel =
+			this.getSmoothedAudio("treble", this.AUDIO_SMOOTH_TREBLE_EFFECTS) ** 2;
+		const bassLevel =
+			this.getSmoothedAudio("bass", this.AUDIO_SMOOTH_BASS_EFFECTS) ** 2;
+		const volume =
+			this.getSmoothedAudio("volume", this.AUDIO_SMOOTH_VOLUME_EFFECTS) ** 2;
 
 		// Very subtle star size and brightness variation with treble
 		// const starBaseSize = 0.8; // Now: this.STAR_MATERIAL_BASE_SIZE
-		this.starMaterial.size = this.STAR_MATERIAL_BASE_SIZE + (trebleLevel * this.STAR_SIZE_TREBLE_FACTOR);
-		this.starMaterial.opacity = this.STAR_BASE_OPACITY_EFFECT + (trebleLevel * this.STAR_OPACITY_TREBLE_FACTOR);
+		this.starMaterial.size =
+			this.STAR_MATERIAL_BASE_SIZE + trebleLevel * this.STAR_SIZE_TREBLE_FACTOR;
+		this.starMaterial.opacity =
+			this.STAR_BASE_OPACITY_EFFECT +
+			trebleLevel * this.STAR_OPACITY_TREBLE_FACTOR;
 
 		// Nebula response to bass and mid frequencies
 		// const nebulaBaseSize = 12.0; // Now: this.NEBULA_MATERIAL_BASE_SIZE
-		this.nebulaMaterial.size = this.NEBULA_MATERIAL_BASE_SIZE + (bassLevel * this.NEBULA_SIZE_BASS_FACTOR);
-		this.nebulaMaterial.opacity = this.NEBULA_MATERIAL_BASE_OPACITY + (bassLevel * this.NEBULA_OPACITY_BASS_FACTOR) + (midLevel * this.NEBULA_OPACITY_MID_FACTOR);
+		this.nebulaMaterial.size =
+			this.NEBULA_MATERIAL_BASE_SIZE + bassLevel * this.NEBULA_SIZE_BASS_FACTOR;
+		this.nebulaMaterial.opacity =
+			this.NEBULA_MATERIAL_BASE_OPACITY +
+			bassLevel * this.NEBULA_OPACITY_BASS_FACTOR +
+			midLevel * this.NEBULA_OPACITY_MID_FACTOR;
 
 		// Overall intensity boost with volume
-		const globalBoost = 1.0 + (volume * this.GLOBAL_BOOST_VOLUME_FACTOR);
+		const globalBoost = 1.0 + volume * this.GLOBAL_BOOST_VOLUME_FACTOR;
 		this.starMaterial.size *= globalBoost;
 		this.nebulaMaterial.size *= globalBoost;
 	}

@@ -88,8 +88,8 @@ export class SceneManager implements SceneManagerInterface {
 			beat: false,
 			init: async () => false,
 			requestMicrophone: async () => false,
-			toggleMicrophone: async () => { },
-			update: () => { },
+			toggleMicrophone: async () => {},
+			update: () => {},
 			getAudioData: () => ({
 				frequencyData: new Uint8Array(0),
 				volume: 0,
@@ -106,7 +106,7 @@ export class SceneManager implements SceneManagerInterface {
 			getBeat: () => false,
 			getVolumeNormalized: () => 0,
 			getFrequencyNormalized: () => 0,
-			dispose: () => { },
+			dispose: () => {},
 		};
 	}
 

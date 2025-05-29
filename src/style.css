@@ -1,4 +1,4 @@
-@import './styles/mobile-nav.css';
+@import "./styles/mobile-nav.css";
 
 /* Reset and full-screen setup */
 * {
@@ -422,20 +422,20 @@ body {
 
 /* Hide original controls but keep them functional */
 #controls {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    position: fixed;
-    left: -9999px; /* Move off-screen but keep functional */
+	opacity: 0 !important;
+	pointer-events: none !important;
+	position: fixed;
+	left: -9999px; /* Move off-screen but keep functional */
 }
 
 /* Keep timing config and poetry overlay visible */
 #timingConfig:not(.hidden),
 #poetryOverlay:not(.hidden) {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    position: fixed;
-    left: 50% !important;
-    transform: translateX(-50%);
+	opacity: 1 !important;
+	pointer-events: auto !important;
+	position: fixed;
+	left: 50% !important;
+	transform: translateX(-50%);
 }
 
 /* Keep tooltips and notifications visible */
@@ -443,17 +443,17 @@ body {
 [role="tooltip"],
 .notification,
 .message {
-    opacity: 1 !important;
-    pointer-events: auto !important;
+	opacity: 1 !important;
+	pointer-events: auto !important;
 }
 
 /* Optional class to show controls (for debugging) */
 .show-debug-controls #controls {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    position: fixed;
-    left: 20px !important;
-    bottom: 20px !important;
+	opacity: 1 !important;
+	pointer-events: auto !important;
+	position: fixed;
+	left: 20px !important;
+	bottom: 20px !important;
 }
 
 @media (max-width: 600px) {
