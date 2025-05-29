@@ -46,11 +46,10 @@ export class Act4Stars extends BaseAct {
 	private readonly QUASAR_CORE_SATURATION = 0.9;
 	private readonly QUASAR_CORE_LIGHTNESS = 0.75; // Brighter core
 	private readonly QUASAR_JET_HUE_START = 0.55; // Cyan-ish
-	private readonly QUASAR_JET_HUE_END = 0.75;   // More towards Purple-ish
+	private readonly QUASAR_JET_HUE_END = 0.75; // More towards Purple-ish
 	private readonly QUASAR_JET_SATURATION = 0.8;
 	private readonly QUASAR_JET_LIGHTNESS_START = 0.65;
 	private readonly QUASAR_JET_LIGHTNESS_END = 0.45;
-
 
 	// Texture Generation Parameters
 	private readonly STAR_TEXTURE_CANVAS_SIZE = 32;
@@ -63,7 +62,6 @@ export class Act4Stars extends BaseAct {
 	private readonly QUASAR_TEXTURE_CANVAS_SIZE = 48; // Larger texture for Quasar
 	private readonly QUASAR_TEXTURE_GRADIENT_CENTER = 24;
 
-
 	// Material Base Properties
 	private readonly STAR_MATERIAL_BASE_SIZE = 0.8;
 	private readonly STAR_MATERIAL_BASE_OPACITY = 0.6;
@@ -71,7 +69,6 @@ export class Act4Stars extends BaseAct {
 	private readonly NEBULA_MATERIAL_BASE_OPACITY = 0.15;
 	private readonly QUASAR_MATERIAL_BASE_SIZE = 2.5; // Adjusted Quasar particle size - larger
 	private readonly QUASAR_MATERIAL_BASE_OPACITY = 0.75; // Adjusted Quasar opacity
-
 
 	// Animation & Reactivity Parameters
 	private readonly INITIAL_CAMERA_Z = 60;
@@ -84,7 +81,6 @@ export class Act4Stars extends BaseAct {
 	private readonly QUASAR_ROTATION_SPEED = 0.00003; // Slower rotation
 	private readonly QUASAR_PULSATION_SPEED = 0.0004;
 	private readonly QUASAR_PULSATION_AMOUNT = 0.25; // Slightly more pulsation
-
 
 	// Visual Effects Parameters
 	private readonly AUDIO_SMOOTH_MID_EFFECTS = 0.2;
@@ -99,9 +95,8 @@ export class Act4Stars extends BaseAct {
 	private readonly NEBULA_OPACITY_MID_FACTOR = 0.05;
 	private readonly GLOBAL_BOOST_VOLUME_FACTOR = 0.2;
 	private readonly AUDIO_SMOOTH_MID_QUASAR = 0.25; // Smoothing for quasar audio
-	private readonly QUASAR_SIZE_MID_FACTOR = 0.6;   // Audio effect on quasar size
+	private readonly QUASAR_SIZE_MID_FACTOR = 0.6; // Audio effect on quasar size
 	private readonly QUASAR_OPACITY_MID_FACTOR = 0.35; // Audio effect on quasar opacity
-
 
 	// Transition Durations
 	private readonly FADE_TRANSITION_DURATION_MS = 2000;
@@ -274,7 +269,9 @@ export class Act4Stars extends BaseAct {
 		// Create Quasar
 		const quasarPositions = new Float32Array(this.QUASAR_COUNT * 3);
 		const quasarColors = new Float32Array(this.QUASAR_COUNT * 3);
-		const coreParticleCount = Math.floor(this.QUASAR_COUNT * this.QUASAR_CORE_RATIO);
+		const coreParticleCount = Math.floor(
+			this.QUASAR_COUNT * this.QUASAR_CORE_RATIO,
+		);
 
 		for (let i = 0; i < this.QUASAR_COUNT; i++) {
 			const i3 = i * 3;
@@ -302,18 +299,27 @@ export class Act4Stars extends BaseAct {
 				const jetLength = jetProgress * this.QUASAR_JET_LENGTH;
 
 				// Linearly interpolate spread from initial to final
-				const currentSpread = this.QUASAR_JET_INITIAL_SPREAD +
-					(this.QUASAR_JET_FINAL_SPREAD - this.QUASAR_JET_INITIAL_SPREAD) * jetProgress;
+				const currentSpread =
+					this.QUASAR_JET_INITIAL_SPREAD +
+					(this.QUASAR_JET_FINAL_SPREAD - this.QUASAR_JET_INITIAL_SPREAD) *
+						jetProgress;
 
 				const angle = Math.random() * Math.PI * 2;
 
 				x = Math.cos(angle) * currentSpread;
 				y = Math.sin(angle) * currentSpread;
 				// Assign to one of two jets (+Z or -Z direction from core)
-				z = (Math.random() > 0.5 ? 1 : -1) * jetLength + (Math.random() - 0.5) * 0.5; // Add some noise to Z
+				z =
+					(Math.random() > 0.5 ? 1 : -1) * jetLength +
+					(Math.random() - 0.5) * 0.5; // Add some noise to Z
 
-				const hue = this.QUASAR_JET_HUE_START + (this.QUASAR_JET_HUE_END - this.QUASAR_JET_HUE_START) * jetProgress;
-				const lightness = this.QUASAR_JET_LIGHTNESS_START + (this.QUASAR_JET_LIGHTNESS_END - this.QUASAR_JET_LIGHTNESS_START) * jetProgress;
+				const hue =
+					this.QUASAR_JET_HUE_START +
+					(this.QUASAR_JET_HUE_END - this.QUASAR_JET_HUE_START) * jetProgress;
+				const lightness =
+					this.QUASAR_JET_LIGHTNESS_START +
+					(this.QUASAR_JET_LIGHTNESS_END - this.QUASAR_JET_LIGHTNESS_START) *
+						jetProgress;
 				color.setHSL(hue, this.QUASAR_JET_SATURATION, lightness);
 			}
 
@@ -353,7 +359,10 @@ export class Act4Stars extends BaseAct {
 		this.quasarMaterial.depthWrite = false;
 		this.quasarMaterial.map = quasarTexture;
 
-		this.quasarParticles = new THREE.Points(this.quasarGeometry, this.quasarMaterial);
+		this.quasarParticles = new THREE.Points(
+			this.quasarGeometry,
+			this.quasarMaterial,
+		);
 		this.quasarParticles.position.x = this.QUASAR_X_OFFSET; // Position along X for depth
 		this.quasarParticles.position.y = 0; // Center on Y
 		this.quasarParticles.position.z = 0; // Center on Z
@@ -397,14 +406,18 @@ export class Act4Stars extends BaseAct {
 		if (this.quasarParticles) {
 			// Slow rotation
 			this.quasarParticles.rotation.y += this.QUASAR_ROTATION_SPEED * deltaTime;
-			this.quasarParticles.rotation.x += (this.QUASAR_ROTATION_SPEED * deltaTime) * 0.3; // Slower tilt
-			this.quasarParticles.rotation.z += (this.QUASAR_ROTATION_SPEED * deltaTime) * 0.2;
-
+			this.quasarParticles.rotation.x +=
+				this.QUASAR_ROTATION_SPEED * deltaTime * 0.3; // Slower tilt
+			this.quasarParticles.rotation.z +=
+				this.QUASAR_ROTATION_SPEED * deltaTime * 0.2;
 
 			// Pulsation effect - store factor for use in updateVisualEffects
 			// const pulseFactor = 1.0 + Math.sin(this.quasarTime * this.QUASAR_PULSATION_SPEED) * this.QUASAR_PULSATION_AMOUNT;
 			// (this.quasarMaterial as any)._currentPulseFactor = pulseFactor;
-			this.quasarPulseFactor = 1.0 + Math.sin(this.quasarTime * this.QUASAR_PULSATION_SPEED) * this.QUASAR_PULSATION_AMOUNT;
+			this.quasarPulseFactor =
+				1.0 +
+				Math.sin(this.quasarTime * this.QUASAR_PULSATION_SPEED) *
+					this.QUASAR_PULSATION_AMOUNT;
 		}
 	}
 
@@ -443,15 +456,18 @@ export class Act4Stars extends BaseAct {
 
 		// Update Quasar visual effects
 		if (this.quasarParticles) {
-			const midLevelQuasar = this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_QUASAR) ** 1.5; // Adjusted power
+			const midLevelQuasar =
+				this.getSmoothedAudio("mid", this.AUDIO_SMOOTH_MID_QUASAR) ** 1.5; // Adjusted power
 			// const currentPulseFactor = (this.quasarMaterial as any)._currentPulseFactor || 1.0;
 			const currentPulseFactor = this.quasarPulseFactor;
 
 			const audioSizeBoost = midLevelQuasar * this.QUASAR_SIZE_MID_FACTOR;
-			this.quasarMaterial.size = (this.QUASAR_MATERIAL_BASE_SIZE + audioSizeBoost) * currentPulseFactor;
+			this.quasarMaterial.size =
+				(this.QUASAR_MATERIAL_BASE_SIZE + audioSizeBoost) * currentPulseFactor;
 
 			const audioOpacityBoost = midLevelQuasar * this.QUASAR_OPACITY_MID_FACTOR;
-			this.quasarMaterial.opacity = this.QUASAR_MATERIAL_BASE_OPACITY + audioOpacityBoost;
+			this.quasarMaterial.opacity =
+				this.QUASAR_MATERIAL_BASE_OPACITY + audioOpacityBoost;
 			this.quasarMaterial.opacity = Math.min(this.quasarMaterial.opacity, 0.95); // Clamp opacity, ensure not fully opaque
 		}
 	}

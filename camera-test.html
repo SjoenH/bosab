@@ -270,17 +270,17 @@
                 // For example, by adding a <div id="debug-runtime-error"></div>
                 const errorDisplay = document.getElementById('camera-debug'); // Or a more specific error div
                 if (errorDisplay) {
-                     const errorDiv = document.createElement('div');
-                     errorDiv.style.color = 'red';
-                     errorDiv.textContent = `Debug UI Error: ${error.message}`;
-                     // Add it once, or update if exists
-                     let existingErrorDiv = document.getElementById('debug-ui-runtime-error');
-                     if (existingErrorDiv) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.color = 'red';
+                    errorDiv.textContent = `Debug UI Error: ${error.message}`;
+                    // Add it once, or update if exists
+                    let existingErrorDiv = document.getElementById('debug-ui-runtime-error');
+                    if (existingErrorDiv) {
                         existingErrorDiv.textContent = `Debug UI Error: ${error.message}`;
-                     } else {
+                    } else {
                         errorDiv.id = 'debug-ui-runtime-error';
                         errorDisplay.appendChild(errorDiv);
-                     }
+                    }
                 }
             }
         }
