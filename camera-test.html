@@ -115,6 +115,7 @@
     <canvas id="canvas"></canvas>
 
     <script type="module">
+        import * as THREE from 'three'; // Added import for THREE
         import { PerformanceApp } from './src/PerformanceApp.ts';
 
         // Global variables for testing
@@ -192,53 +193,95 @@
         }
 
         function updateDebugInfo() {
-            if (!app) return;
+            if (!app) {
+                // If app is null here, it means something went wrong with init.
+                // The "Loading..." will persist, which is a sign.
+                // User should check #test-log for initialization errors.
+                return;
+            }
 
             try {
-                // Get Three.js camera
                 const camera = app.camera;
+                const threeJsPositionEl = document.getElementById('threejs-position');
+                const threeJsTargetEl = document.getElementById('threejs-target');
 
-                // Get state manager
-                const stateManager = app.getStateManager();
-                const context = stateManager.getContext();
-
-                // Get scene manager and camera controller
-                const sceneManager = app.sceneManager;
-                const cameraController = sceneManager ? sceneManager.getCameraController() : null;
-
-                // Update Three.js camera info
-                document.getElementById('threejs-position').textContent =
-                    `Position: ${formatVector3(camera?.position)}`;
-
-                // Calculate camera target (approximate)
-                const target = camera ? new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position) : null;
-                document.getElementById('threejs-target').textContent =
-                    `Target: ${formatVector3(target)}`;
-
-                // Update XState context info
-                document.getElementById('state-position').textContent =
-                    `Position: ${formatVector3(context.cameraPosition)}`;
-                document.getElementById('state-target').textContent =
-                    `Target: ${formatVector3(context.cameraTarget)}`;
-                document.getElementById('state-act').textContent =
-                    `Act: ${context.currentAct}`;
-                document.getElementById('state-transitioning').textContent =
-                    `Transitioning: ${context.isTransitioning}`;
-
-                // Update Camera Controller info
-                if (cameraController) {
-                    const controllerState = cameraController.getCurrentState();
-                    document.getElementById('controller-transitioning').textContent =
-                        `In Transition: ${controllerState.isTransitioning}`;
-                    document.getElementById('controller-progress').textContent =
-                        `Progress: ${(controllerState.transitionProgress * 100).toFixed(1)}%`;
+                if (camera && camera.position && camera.quaternion) {
+                    threeJsPositionEl.textContent = `Position: ${formatVector3(camera.position)}`;
+                    const targetVec = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+                    threeJsTargetEl.textContent = `Target: ${formatVector3(targetVec)}`;
                 } else {
-                    document.getElementById('controller-transitioning').textContent = 'In Transition: N/A';
-                    document.getElementById('controller-progress').textContent = 'Progress: N/A';
+                    threeJsPositionEl.textContent = 'Position: app.camera or its properties not available';
+                    threeJsTargetEl.textContent = 'Target: app.camera or its properties not available';
+                }
+
+                const stateManager = app.getStateManager ? app.getStateManager() : null;
+                const statePositionEl = document.getElementById('state-position');
+                const stateTargetEl = document.getElementById('state-target');
+                const stateActEl = document.getElementById('state-act');
+                const stateTransitioningEl = document.getElementById('state-transitioning');
+
+                if (stateManager && typeof stateManager.getContext === 'function') {
+                    const context = stateManager.getContext();
+                    if (context) {
+                        statePositionEl.textContent = `Position: ${formatVector3(context.cameraPosition)}`;
+                        stateTargetEl.textContent = `Target: ${formatVector3(context.cameraTarget)}`;
+                        stateActEl.textContent = `Act: ${context.currentAct !== undefined ? context.currentAct : 'N/A'}`;
+                        stateTransitioningEl.textContent = `Transitioning: ${context.isTransitioning !== undefined ? context.isTransitioning : 'N/A'}`;
+                    } else {
+                        statePositionEl.textContent = 'Position: Context not available';
+                        stateTargetEl.textContent = 'Target: Context not available';
+                        stateActEl.textContent = 'Act: Context not available';
+                        stateTransitioningEl.textContent = 'Transitioning: Context not available';
+                    }
+                } else {
+                    statePositionEl.textContent = 'Position: StateManager or getContext() not available';
+                    stateTargetEl.textContent = 'Target: N/A';
+                    stateActEl.textContent = 'Act: N/A';
+                    stateTransitioningEl.textContent = 'Transitioning: N/A';
+                }
+
+                const sceneManager = app.sceneManager;
+                const controllerTransitioningEl = document.getElementById('controller-transitioning');
+                const controllerProgressEl = document.getElementById('controller-progress');
+
+                if (sceneManager && typeof sceneManager.getCameraController === 'function') {
+                    const cameraController = sceneManager.getCameraController();
+                    if (cameraController && typeof cameraController.getCurrentState === 'function') {
+                        const controllerState = cameraController.getCurrentState();
+                        if (controllerState) {
+                            controllerTransitioningEl.textContent = `In Transition: ${controllerState.isTransitioning !== undefined ? controllerState.isTransitioning : 'N/A'}`;
+                            controllerProgressEl.textContent = `Progress: ${controllerState.transitionProgress !== undefined ? (controllerState.transitionProgress * 100).toFixed(1) + '%' : 'N/A'}`;
+                        } else {
+                            controllerTransitioningEl.textContent = 'In Transition: ControllerState not available';
+                            controllerProgressEl.textContent = 'Progress: ControllerState not available';
+                        }
+                    } else {
+                        controllerTransitioningEl.textContent = 'In Transition: CameraController or getCurrentState() not available';
+                        controllerProgressEl.textContent = 'Progress: N/A';
+                    }
+                } else {
+                    controllerTransitioningEl.textContent = 'In Transition: SceneManager or getCameraController() not available';
+                    controllerProgressEl.textContent = 'Progress: N/A';
                 }
 
             } catch (error) {
                 console.error('Debug update error:', error);
+                // You could also update a specific div in your HTML to show this error
+                // For example, by adding a <div id="debug-runtime-error"></div>
+                const errorDisplay = document.getElementById('camera-debug'); // Or a more specific error div
+                if (errorDisplay) {
+                     const errorDiv = document.createElement('div');
+                     errorDiv.style.color = 'red';
+                     errorDiv.textContent = `Debug UI Error: ${error.message}`;
+                     // Add it once, or update if exists
+                     let existingErrorDiv = document.getElementById('debug-ui-runtime-error');
+                     if (existingErrorDiv) {
+                        existingErrorDiv.textContent = `Debug UI Error: ${error.message}`;
+                     } else {
+                        errorDiv.id = 'debug-ui-runtime-error';
+                        errorDisplay.appendChild(errorDiv);
+                     }
+                }
             }
         }
 
