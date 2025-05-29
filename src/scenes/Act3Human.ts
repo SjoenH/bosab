@@ -7,7 +7,7 @@
 
 import * as THREE from "three";
 import type { AudioData } from "../types"; // Import the correct AudioData type
-import { TextureUtils } from "../utils/TextureUtils";
+import { createRadialGradientTexture } from "../utils/TextureUtils";
 import { BaseAct } from "./BaseAct";
 
 export class Act3Human extends BaseAct {
@@ -151,7 +151,7 @@ export class Act3Human extends BaseAct {
 		this.particleMaterial.depthWrite = false;
 
 		// Make particles circular
-		const particleTexture = TextureUtils.createRadialGradientTexture(
+		const particleTexture = createRadialGradientTexture(
 			this.PARTICLE_CANVAS_SIZE,
 			this.PARTICLE_CANVAS_SIZE / 2,
 			[

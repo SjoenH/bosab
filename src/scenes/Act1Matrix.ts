@@ -8,7 +8,7 @@ import {
 	type Font,
 	FontLoader,
 } from "three/examples/jsm/loaders/FontLoader.js";
-import { TextureUtils } from "../utils/TextureUtils";
+import { createCharacterTexture } from "../utils/TextureUtils";
 import { BaseAct } from "./BaseAct";
 
 export class Act1Matrix extends BaseAct {
@@ -169,7 +169,7 @@ export class Act1Matrix extends BaseAct {
 		this.fallSpeeds = new Float32Array(this.particleCount);
 
 		// Create character texture for Matrix rain effect
-		const charTexture = TextureUtils.createCharacterTexture(
+		const charTexture = createCharacterTexture(
 			Math.random() < 0.5 ? "0" : "1",
 			{
 				canvasWidth: this.CHAR_CANVAS_WIDTH,

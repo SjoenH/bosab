@@ -6,7 +6,7 @@
  */
 
 import * as THREE from "three";
-import { TextureUtils } from "../utils/TextureUtils";
+import { createRadialGradientTexture } from "../utils/TextureUtils";
 import { BaseAct } from "./BaseAct";
 
 export class Act4Stars extends BaseAct {
@@ -164,7 +164,7 @@ export class Act4Stars extends BaseAct {
 		}
 
 		// Setup star material with circular texture
-		const starTexture = TextureUtils.createRadialGradientTexture(
+		const starTexture = createRadialGradientTexture(
 			this.STAR_TEXTURE_CANVAS_SIZE,
 			this.STAR_TEXTURE_GRADIENT_CENTER,
 			[
@@ -191,7 +191,7 @@ export class Act4Stars extends BaseAct {
 		this.starMaterial.map = starTexture;
 
 		// Setup nebula material with larger, softer circular texture
-		const nebulaTexture = TextureUtils.createRadialGradientTexture(
+		const nebulaTexture = createRadialGradientTexture(
 			this.NEBULA_TEXTURE_CANVAS_SIZE,
 			this.NEBULA_TEXTURE_GRADIENT_CENTER,
 			[

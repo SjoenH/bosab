@@ -3,7 +3,10 @@
  */
 
 import * as THREE from "three";
-import { TextureUtils } from "../utils/TextureUtils";
+import {
+	createRadialGradientTexture,
+	createStreakTexture,
+} from "../utils/TextureUtils";
 import { BaseAct } from "./BaseAct";
 
 export class Act2Desert extends BaseAct {
@@ -206,7 +209,7 @@ export class Act2Desert extends BaseAct {
 		this.turbulence = new Float32Array(this.TERRAIN_PARTICLE_COUNT * 3);
 
 		// Create circular texture for desert terrain particles
-		const terrainTexture = TextureUtils.createRadialGradientTexture(
+		const terrainTexture = createRadialGradientTexture(
 			this.TERRAIN_TEXTURE_CANVAS_SIZE,
 			this.TERRAIN_TEXTURE_GRADIENT_CENTER,
 			[
@@ -217,7 +220,7 @@ export class Act2Desert extends BaseAct {
 		);
 
 		// Create circular texture for dust particles (softer gradient)
-		const dustTexture = TextureUtils.createRadialGradientTexture(
+		const dustTexture = createRadialGradientTexture(
 			this.DUST_TEXTURE_CANVAS_SIZE,
 			this.DUST_TEXTURE_GRADIENT_CENTER,
 			[
@@ -380,7 +383,7 @@ export class Act2Desert extends BaseAct {
 		this.materials.push(this.dustParticleMaterial);
 
 		// Create texture for wind streaks
-		const streakTexture = TextureUtils.createStreakTexture({
+		const streakTexture = createStreakTexture({
 			canvasSize: this.STREAK_TEXTURE_CANVAS_SIZE,
 			gradientStops: [
 				[0, "rgba(255, 255, 255, 0)"],
