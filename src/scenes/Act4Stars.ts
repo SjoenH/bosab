@@ -7,6 +7,7 @@
 
 import * as THREE from "three";
 import { BaseAct } from "./BaseAct";
+import { TextureUtils } from "../utils/TextureUtils";
 
 export class Act4Stars extends BaseAct {
 	// Particle Counts
@@ -146,16 +147,14 @@ export class Act4Stars extends BaseAct {
 		}
 
 		// Setup star material with circular texture
-		const starCanvas = document.createElement('canvas');
-		const starCtx = starCanvas.getContext('2d');
-		if (!starCtx) throw new Error('Could not create 2D context for star texture');
-		starCanvas.width = starCanvas.height = this.STAR_TEXTURE_CANVAS_SIZE;
-		const gradient = starCtx.createRadialGradient(this.STAR_TEXTURE_GRADIENT_CENTER, this.STAR_TEXTURE_GRADIENT_CENTER, 0, this.STAR_TEXTURE_GRADIENT_CENTER, this.STAR_TEXTURE_GRADIENT_CENTER, this.STAR_TEXTURE_GRADIENT_CENTER);
-		gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-		gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		starCtx.fillStyle = gradient;
-		starCtx.fillRect(0, 0, this.STAR_TEXTURE_CANVAS_SIZE, this.STAR_TEXTURE_CANVAS_SIZE);
-		const starTexture = new THREE.CanvasTexture(starCanvas);
+		const starTexture = TextureUtils.createRadialGradientTexture(
+			this.STAR_TEXTURE_CANVAS_SIZE,
+			this.STAR_TEXTURE_GRADIENT_CENTER,
+			[
+				[0, "rgba(255, 255, 255, 1)"],
+				[1, "rgba(255, 255, 255, 0)"],
+			],
+		);
 
 		this.starGeometry.setAttribute(
 			"position",
@@ -175,17 +174,15 @@ export class Act4Stars extends BaseAct {
 		this.starMaterial.map = starTexture;
 
 		// Setup nebula material with larger, softer circular texture
-		const nebulaCanvas = document.createElement('canvas');
-		const nebulaCtx = nebulaCanvas.getContext('2d');
-		if (!nebulaCtx) throw new Error('Could not create 2D context for nebula texture');
-		nebulaCanvas.width = nebulaCanvas.height = this.NEBULA_TEXTURE_CANVAS_SIZE;
-		const nebulaGradient = nebulaCtx.createRadialGradient(this.NEBULA_TEXTURE_GRADIENT_CENTER, this.NEBULA_TEXTURE_GRADIENT_CENTER, 0, this.NEBULA_TEXTURE_GRADIENT_CENTER, this.NEBULA_TEXTURE_GRADIENT_CENTER, this.NEBULA_TEXTURE_GRADIENT_CENTER);
-		nebulaGradient.addColorStop(0, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_0_ALPHA})`); // Brighter center
-		nebulaGradient.addColorStop(this.NEBULA_GRADIENT_STOP_1_POS, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_1_ALPHA})`); // More visible mid-range
-		nebulaGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		nebulaCtx.fillStyle = nebulaGradient;
-		nebulaCtx.fillRect(0, 0, this.NEBULA_TEXTURE_CANVAS_SIZE, this.NEBULA_TEXTURE_CANVAS_SIZE);
-		const nebulaTexture = new THREE.CanvasTexture(nebulaCanvas);
+		const nebulaTexture = TextureUtils.createRadialGradientTexture(
+			this.NEBULA_TEXTURE_CANVAS_SIZE,
+			this.NEBULA_TEXTURE_GRADIENT_CENTER,
+			[
+				[0, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_0_ALPHA})`],
+				[this.NEBULA_GRADIENT_STOP_1_POS, `rgba(255, 255, 255, ${this.NEBULA_GRADIENT_STOP_1_ALPHA})`],
+				[1, "rgba(255, 255, 255, 0)"],
+			],
+		);
 
 		this.nebulaGeometry.setAttribute(
 			"position",

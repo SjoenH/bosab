@@ -4,6 +4,7 @@
 
 import * as THREE from "three";
 import { BaseAct } from "./BaseAct";
+import { TextureUtils } from "../utils/TextureUtils";
 
 export class Act2Desert extends BaseAct {
 	// General Scene Parameters
@@ -202,36 +203,26 @@ export class Act2Desert extends BaseAct {
 		this.turbulence = new Float32Array(this.TERRAIN_PARTICLE_COUNT * 3);
 
 		// Create circular texture for desert terrain particles
-		const terrainCanvas = document.createElement('canvas');
-		const terrainCtx = terrainCanvas.getContext('2d');
-		if (!terrainCtx) throw new Error('Could not create 2D context for terrain texture');
-		terrainCanvas.width = terrainCanvas.height = this.TERRAIN_TEXTURE_CANVAS_SIZE;
-		const terrainGradient = terrainCtx.createRadialGradient(
-			this.TERRAIN_TEXTURE_GRADIENT_CENTER, this.TERRAIN_TEXTURE_GRADIENT_CENTER, 0,
-			this.TERRAIN_TEXTURE_GRADIENT_CENTER, this.TERRAIN_TEXTURE_GRADIENT_CENTER, this.TERRAIN_TEXTURE_GRADIENT_CENTER
+		const terrainTexture = TextureUtils.createRadialGradientTexture(
+			this.TERRAIN_TEXTURE_CANVAS_SIZE,
+			this.TERRAIN_TEXTURE_GRADIENT_CENTER,
+			[
+				[0, "rgba(255, 255, 255, 1)"],
+				[0.5, "rgba(255, 255, 255, 0.8)"],
+				[1, "rgba(255, 255, 255, 0)"],
+			],
 		);
-		terrainGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-		terrainGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
-		terrainGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		terrainCtx.fillStyle = terrainGradient;
-		terrainCtx.fillRect(0, 0, this.TERRAIN_TEXTURE_CANVAS_SIZE, this.TERRAIN_TEXTURE_CANVAS_SIZE);
-		const terrainTexture = new THREE.CanvasTexture(terrainCanvas);
 
 		// Create circular texture for dust particles (softer gradient)
-		const dustCanvas = document.createElement('canvas');
-		const dustCtx = dustCanvas.getContext('2d');
-		if (!dustCtx) throw new Error('Could not create 2D context for dust texture');
-		dustCanvas.width = dustCanvas.height = this.DUST_TEXTURE_CANVAS_SIZE;
-		const dustGradient = dustCtx.createRadialGradient(
-			this.DUST_TEXTURE_GRADIENT_CENTER, this.DUST_TEXTURE_GRADIENT_CENTER, 0,
-			this.DUST_TEXTURE_GRADIENT_CENTER, this.DUST_TEXTURE_GRADIENT_CENTER, this.DUST_TEXTURE_GRADIENT_CENTER
+		const dustTexture = TextureUtils.createRadialGradientTexture(
+			this.DUST_TEXTURE_CANVAS_SIZE,
+			this.DUST_TEXTURE_GRADIENT_CENTER,
+			[
+				[0, "rgba(255, 255, 255, 0.6)"],
+				[0.3, "rgba(255, 255, 255, 0.3)"],
+				[1, "rgba(255, 255, 255, 0)"],
+			],
 		);
-		dustGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-		dustGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.3)');
-		dustGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		dustCtx.fillStyle = dustGradient;
-		dustCtx.fillRect(0, 0, this.DUST_TEXTURE_CANVAS_SIZE, this.DUST_TEXTURE_CANVAS_SIZE);
-		const dustTexture = new THREE.CanvasTexture(dustCanvas);
 
 		// Create dunes with random dot placement instead of grid
 		for (let i = 0; i < this.TERRAIN_PARTICLE_COUNT; i++) {
@@ -357,27 +348,25 @@ export class Act2Desert extends BaseAct {
 		this.group.add(dustSystem);
 		this.materials.push(this.dustParticleMaterial);
 
-		// Create circular texture for wind streaks (elongated gradient)
-		const streakCanvas = document.createElement('canvas');
-		const streakCtx = streakCanvas.getContext('2d');
-		if (!streakCtx) throw new Error('Could not create 2D context for streak texture');
-		streakCanvas.width = streakCanvas.height = this.STREAK_TEXTURE_CANVAS_SIZE;
-
-		// Create an elongated gradient for streaks
-		streakCtx.translate(this.STREAK_TEXTURE_CENTER_TRANSLATE, this.STREAK_TEXTURE_CENTER_TRANSLATE);
-		streakCtx.rotate(this.STREAK_TEXTURE_ROTATION_RADIANS);
-		const streakGradient = streakCtx.createLinearGradient(this.STREAK_TEXTURE_GRADIENT_X_START, 0, this.STREAK_TEXTURE_GRADIENT_X_END, 0);
-		streakGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-		streakGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.4)');
-		streakGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
-		streakGradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.4)');
-		streakGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		streakCtx.fillStyle = streakGradient;
-		streakCtx.fillRect(
-			this.STREAK_TEXTURE_RECT_X, this.STREAK_TEXTURE_RECT_Y,
-			this.STREAK_TEXTURE_RECT_WIDTH, this.STREAK_TEXTURE_RECT_HEIGHT
-		);
-		const streakTexture = new THREE.CanvasTexture(streakCanvas);
+		// Create texture for wind streaks
+		const streakTexture = TextureUtils.createStreakTexture({
+			canvasSize: this.STREAK_TEXTURE_CANVAS_SIZE,
+			gradientStops: [
+				[0, "rgba(255, 255, 255, 0)"],
+				[0.4, "rgba(255, 255, 255, 0.4)"],
+				[0.5, "rgba(255, 255, 255, 0.8)"],
+				[0.6, "rgba(255, 255, 255, 0.4)"],
+				[1, "rgba(255, 255, 255, 0)"],
+			],
+			rect: {
+				x: this.STREAK_TEXTURE_RECT_X,
+				y: this.STREAK_TEXTURE_RECT_Y,
+				width: this.STREAK_TEXTURE_RECT_WIDTH,
+				height: this.STREAK_TEXTURE_RECT_HEIGHT,
+			},
+			rotation: this.STREAK_TEXTURE_ROTATION_RADIANS,
+			translate: { x: this.STREAK_TEXTURE_CENTER_TRANSLATE, y: this.STREAK_TEXTURE_CENTER_TRANSLATE },
+		});
 
 		// Initialize wind streak particle system
 		this.streakPositions = new Float32Array(this.STREAK_PARTICLE_COUNT * 3);

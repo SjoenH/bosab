@@ -8,6 +8,7 @@
 import * as THREE from "three";
 import { BaseAct } from "./BaseAct";
 import type { AudioData } from "../types"; // Import the correct AudioData type
+import { TextureUtils } from "../utils/TextureUtils";
 
 export class Act3Human extends BaseAct {
 	// Particle System Constants
@@ -145,22 +146,17 @@ export class Act3Human extends BaseAct {
 		this.particleMaterial.depthWrite = false;
 
 		// Make particles circular
-		const canvas = document.createElement("canvas");
-		canvas.width = this.PARTICLE_CANVAS_SIZE;
-		canvas.height = this.PARTICLE_CANVAS_SIZE;
-		const context = canvas.getContext("2d");
+		const particleTexture = TextureUtils.createRadialGradientTexture(
+			this.PARTICLE_CANVAS_SIZE,
+			this.PARTICLE_CANVAS_SIZE / 2,
+			[
+				[0, "rgba(255, 255, 255, 1)"], // Solid center
+				[0.5, "rgba(255, 255, 255, 0.8)"], // Feathered edge
+				[1, "rgba(255, 255, 255, 0)"], // Transparent outer edge
+			],
+		);
+		this.particleMaterial.map = particleTexture;
 
-		if (context) {
-			// Draw a perfect circle
-			context.clearRect(0, 0, this.PARTICLE_CANVAS_SIZE, this.PARTICLE_CANVAS_SIZE);
-			context.fillStyle = "white";
-			context.beginPath();
-			context.arc(this.PARTICLE_CANVAS_SIZE / 2, this.PARTICLE_CANVAS_SIZE / 2, this.PARTICLE_CANVAS_CIRCLE_RADIUS, 0, Math.PI * 2);
-			context.fill();
-
-			const texture = new THREE.CanvasTexture(canvas);
-			this.particleMaterial.map = texture;
-		}
 
 		// Create and add particles
 		this.particles.push(

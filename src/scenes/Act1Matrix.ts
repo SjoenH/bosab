@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { FontLoader, type Font } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { BaseAct } from "./BaseAct";
+import { TextureUtils } from "../utils/TextureUtils";
 
 export class Act1Matrix extends BaseAct {
 	// Particle system constants
@@ -141,49 +142,22 @@ export class Act1Matrix extends BaseAct {
 		this.fallSpeeds = new Float32Array(this.particleCount);
 
 		// Create character texture for Matrix rain effect
-		const charCanvas = document.createElement('canvas');
-		const charCtx = charCanvas.getContext('2d');
-		if (!charCtx) throw new Error('Could not create 2D context for character texture');
-
-		// Make canvas larger for bigger characters and longer trails
-		charCanvas.width = this.CHAR_CANVAS_WIDTH;
-		charCanvas.height = this.CHAR_CANVAS_HEIGHT;
-
-		// Set up text rendering with larger font
-		charCtx.fillStyle = this.CHAR_FILL_STYLE;
-		charCtx.textAlign = 'center';
-		charCtx.textBaseline = 'middle';
-		charCtx.font = `bold ${this.CHAR_FONT_SIZE_PX}px monospace`;
-
-		// Draw the main character (randomly 0 or 1)
-		const char = Math.random() < 0.5 ? '0' : '1';
-		charCtx.fillText(char, this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2); // Adjusted center point
-
-		// Create trail effect with multiple fading copies
-		for (let i = 1; i < this.CHAR_TRAIL_COUNT; i++) {
-			const opacity = 1 - (i * this.CHAR_TRAIL_OPACITY_STEP);
-			charCtx.fillStyle = `rgba(0, 255, 153, ${opacity})`;
-			charCtx.fillText(char, this.CHAR_CANVAS_WIDTH / 2, (this.CHAR_FONT_SIZE_PX / 2) + i * this.CHAR_FONT_SIZE_PX);
-		}
-
-		// Add stronger glow effect
-		const glowGradient = charCtx.createRadialGradient(
-			this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2, 0,
-			this.CHAR_CANVAS_WIDTH / 2, this.CHAR_FONT_SIZE_PX / 2, this.CHAR_GLOW_GRADIENT_RADIUS
+		const charTexture = TextureUtils.createCharacterTexture(
+			Math.random() < 0.5 ? "0" : "1",
+			{
+				canvasWidth: this.CHAR_CANVAS_WIDTH,
+				canvasHeight: this.CHAR_CANVAS_HEIGHT,
+				fontStyle: `bold ${this.CHAR_FONT_SIZE_PX}px monospace`,
+				fillStyle: this.CHAR_FILL_STYLE,
+				trailCount: this.CHAR_TRAIL_COUNT,
+				trailOpacityStep: this.CHAR_TRAIL_OPACITY_STEP,
+				glow: {
+					gradientRadius: this.CHAR_GLOW_GRADIENT_RADIUS,
+					colorStart: this.CHAR_GLOW_GRADIENT_COLOR_START,
+					colorEnd: this.CHAR_GLOW_GRADIENT_COLOR_END,
+				},
+			},
 		);
-		glowGradient.addColorStop(0, this.CHAR_GLOW_GRADIENT_COLOR_START);
-		glowGradient.addColorStop(1, this.CHAR_GLOW_GRADIENT_COLOR_END);
-		charCtx.globalCompositeOperation = 'screen';
-		charCtx.fillStyle = glowGradient;
-		charCtx.fillRect(0, 0, this.CHAR_CANVAS_WIDTH, this.CHAR_CANVAS_WIDTH); // Use CHAR_CANVAS_WIDTH for square glow area around char
-
-		const charTexture = new THREE.CanvasTexture(charCanvas);
-		charTexture.needsUpdate = true;
-
-		// Adjust texture properties for better trails
-		charTexture.minFilter = THREE.LinearFilter;
-		charTexture.magFilter = THREE.LinearFilter;
-		charTexture.generateMipmaps = false;
 
 		// Load font for statistical text
 		try {
